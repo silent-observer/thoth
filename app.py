@@ -4,7 +4,7 @@ from flask.helpers import url_for
 from neo4j import GraphDatabase
 import bcrypt, base64
 from werkzeug.utils import redirect
-
+import random
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
@@ -140,3 +140,92 @@ def login():
 def logout():
     session.pop('username', None)
     return redirect(url_for('main'))
+
+@app.route("/question", methods=['POST', 'GET'])
+
+def question():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+       
+    form_text = '''
+       <p>Question form:</p>
+       <form method="post">
+           <label for="title">title:</label><br>
+           <input type="text" id="title" name="title"><br>
+           <label for="question">Question:</label><br>
+           <textarea id="question" name="question"></textarea>
+           <br>
+           <input type="submit" value="Submit">
+       </form>
+       '''
+    if request.method == 'POST':
+        title = request.form['title']
+        question = request.form['question']
+        username = session['username']
+ 
+        with get_db().session() as db:
+           
+            while (True):
+                id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
+                result = db.run(
+                r'MATCH (Q:Question {id: $id}) RETURN Q',
+                id = id
+                ).single()
+                if result is None:
+                    break
+            db.run(
+                r'MATCH (U:User {username:$username}) CREATE (Q:Question {title:$title, question:$question, id: $id}) <-[r:ASKED]-(U)',
+                title=title, question=question, username = username, id=id
+            )
+            return redirect(url_for('q', id=id))
+   
+    return form_text
+ 
+ 
+@app.route("/q/<id>",methods=['POST', 'GET'])
+def q(id):
+    with get_db().session() as db:
+        result = db.run(
+        r'MATCH (Q:Question {id: $id})<-[r:ASKED]-(U:User) return Q,U',id=id
+        ).single()
+        if result is None:
+            abort(404)
+        title = result['Q']['title'] #словарь где Q - переменная с узлом, а title - поле/свойство во узла
+        question =result['Q']['question']
+        username = result['U']['username']
+
+        result = db.run(
+        r'MATCH (Q:Question {id: $id})<-[:TO]-(A:Answer)<-[:ANSWERED]-(U:User) return A,U',id=id
+        )
+        answers = []
+        for r in  result:
+            string = f"{r['U']['username']}: {r['A']['answer']}"
+            answers.append(string)
+        a_text = "<br>".join(answers)
+        q_text = f'''
+        <p>Question:</p>
+        <h1>{username}</h1>
+        <h1>{title}</h1>
+        <p>{question}</p>'''
+        form_text=f'''
+        <form method="post">
+           <label for="answer">Answer:</label><br>
+           <textarea id="answer" name="answer"></textarea>
+           <br>
+           <input type="submit" value="Submit">
+       </form>
+        '''
+        if 'username' not in session:
+            return q_text+a_text
+        if request.method == 'POST':
+            answer = request.form['answer']
+            username = session['username']
+            db.run(
+                r'MATCH (U:User {username:$username}), (Q:Question {id:$id}) CREATE (Q)<-[:TO]-(A:Answer {answer:$answer}) <-[:ANSWERED]-(U)',
+                username = username, id=id, answer=answer
+            )
+            return redirect(url_for('q', id=id))
+
+        return q_text+form_text+a_text
+        # return f'''<h1>{title}</h1>'''    
+# HTML-собрать и на странице поста указать автора поста
