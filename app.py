@@ -2,7 +2,10 @@ import os, string
 from flask import Flask, g, request, session
 from flask.helpers import url_for
 from neo4j import GraphDatabase
+from neo4j.time import DateTime
+
 import bcrypt, base64
+import neo4j
 from werkzeug.utils import redirect
 import random
 app = Flask(__name__)
@@ -88,9 +91,10 @@ def register():
             pass_hash = base64.b64encode(bcrypt.hashpw(
                 password.encode('utf-8'), bcrypt.gensalt()
                 )).decode('ascii')
+            register_date = DateTime.now()
             db.run(
-                r'CREATE (n:User {username:$username, pass_hash:$pass_hash})',
-                username=username, pass_hash=pass_hash
+                r'CREATE (n:User {username:$username, pass_hash:$pass_hash, register_date:$register_date})',
+                username=username, pass_hash=pass_hash, register_date=register_date
             )
             return redirect(url_for('users'))
     else:
@@ -162,6 +166,7 @@ def question():
         title = request.form['title']
         question = request.form['question']
         username = session['username']
+        date = DateTime.now()
  
         with get_db().session() as db:
            
@@ -174,8 +179,8 @@ def question():
                 if result is None:
                     break
             db.run(
-                r'MATCH (U:User {username:$username}) CREATE (Q:Question {title:$title, question:$question, id: $id}) <-[r:ASKED]-(U)',
-                title=title, question=question, username = username, id=id
+                r'MATCH (U:User {username:$username}) CREATE (Q:Question {title:$title, question:$question, id: $id, date: $date, votes: 0}) <-[r:ASKED]-(U)',
+                title=title, question=question, username = username, id=id, date=date
             )
             return redirect(url_for('q', id=id))
    
@@ -220,9 +225,10 @@ def q(id):
         if request.method == 'POST':
             answer = request.form['answer']
             username = session['username']
+            date = DateTime.now()
             db.run(
-                r'MATCH (U:User {username:$username}), (Q:Question {id:$id}) CREATE (Q)<-[:TO]-(A:Answer {answer:$answer}) <-[:ANSWERED]-(U)',
-                username = username, id=id, answer=answer
+                r'MATCH (U:User {username:$username}), (Q:Question {id:$id}) CREATE (Q)<-[:TO]-(A:Answer {answer:$answer, date:$date, votes: 0}) <-[:ANSWERED]-(U)',
+                username = username, id=id, answer=answer, date=date
             )
             return redirect(url_for('q', id=id))
 
