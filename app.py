@@ -246,7 +246,7 @@ def search():
 
     with get_db().session() as db:
         result = db.run(
-            'CALL db.index.fulltext.queryNodes("titlesAndTexts", $text) YIELD node, score RETURN node, score', text=search_text
+            'CALL db.index.fulltext.queryNodes("titlesAndTexts", $text) YIELD node, score RETURN node, score LIMIT 50', text=search_text
         )
 
         result_texts = []
