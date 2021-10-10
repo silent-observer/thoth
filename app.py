@@ -229,3 +229,42 @@ def q(id):
         return q_text+form_text+a_text
         # return f'''<h1>{title}</h1>'''    
 # HTML-собрать и на странице поста указать автора поста
+
+@app.route("/search")
+def search():
+    search_text = request.args.get('s', '')
+    form_text = f'''
+    <form method="get">
+        <input type="text" id="s" name="s" value="{search_text}">
+        <input type="submit" value="Find">
+    </form>
+    '''
+    if search_text == '':
+        return form_text
+    
+    text = '<h2>Search results</h2>'
+
+    with get_db().session() as db:
+        result = db.run(
+            'CALL db.index.fulltext.queryNodes("titlesAndTexts", $text) YIELD node, score RETURN node, score', text=search_text
+        )
+
+        result_texts = []
+        for r in result:
+            url = url_for('q', id=r['node']['id'])
+            title = r['node']['title']
+            question = r['node']['question']
+            if len(question) > 30:
+                question = question[:30] + '...'
+
+            result_texts.append(f'''
+                <li><b><a href={url}>{title}</a></b><br>
+                {question}
+                </li>
+            ''')
+        if len(result_texts) == 0:
+            text += '<p>Nothing was found</p>'
+        else:
+            text += '<ul>' + ''.join(result_texts) + '</ul>'
+        return form_text + text
+
