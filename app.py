@@ -5,7 +5,6 @@ from neo4j import GraphDatabase
 from neo4j.time import DateTime
 
 import bcrypt, base64
-import neo4j
 from werkzeug.utils import redirect
 import random
 app = Flask(__name__)
@@ -190,6 +189,35 @@ def question():
 @app.route("/q/<id>",methods=['POST', 'GET'])
 def q(id):
     with get_db().session() as db:
+        logged_in = 'username' in session
+        if request.method == 'POST':
+            if not logged_in:
+                return redirect(url_for('q', id=id))
+            
+            username = session['username']
+            date = DateTime.now()
+
+            if 'q_id' in request.form:
+                comment = request.form['comment']
+                db.run(
+                    r'MATCH (U:User {username:$username}), (Q:Question {id:$id}) CREATE (Q)<-[:TO]-(C:Comment {comment:$comment, date:$date}) <-[:COMMENTED]-(U)',
+                    username = username, id=id, comment=comment, date=date
+                )
+            elif 'a_id' in request.form:
+                comment = request.form['comment']
+                a_id = request.form['a_id']
+                db.run(
+                    r'MATCH (U:User {username:$username}), (A:Answer) WHERE id(A) = $a_id CREATE (A)<-[:TO]-(C:Comment {comment:$comment, date:$date})<-[:COMMENTED]-(U)',
+                    username = username, a_id=int(a_id), comment=comment, date=date
+                )
+            else:
+                answer = request.form['answer']
+                db.run(
+                    r'MATCH (U:User {username:$username}), (Q:Question {id:$id}) CREATE (Q)<-[:TO]-(A:Answer {answer:$answer, date:$date, votes: 0}) <-[:ANSWERED]-(U)',
+                    username = username, id=id, answer=answer, date=date
+                )
+            return redirect(url_for('q', id=id))
+
         result = db.run(
         r'MATCH (Q:Question {id: $id})<-[r:ASKED]-(U:User) return Q,U',id=id
         ).single()
@@ -200,18 +228,51 @@ def q(id):
         username = result['U']['username']
 
         result = db.run(
-        r'MATCH (Q:Question {id: $id})<-[:TO]-(A:Answer)<-[:ANSWERED]-(U:User) return A,U',id=id
+        r'MATCH (Q:Question {id: $id})<-[:TO]-(C:Comment)<-[:COMMENTED]-(U:User) return C,U ORDER BY C.date',id=id
+        )
+        question_comments = []
+        for r in result:
+            string = f"<li>{r['U']['username']}: {r['C']['comment']}</li>"
+            question_comments.append(string)
+
+        result = db.run(
+        r'MATCH (Q:Question {id: $id})<-[:TO]-(A:Answer)<-[:ANSWERED]-(U:User) return A,U,[(CU:User)-[:COMMENTED]->(C:Comment)-[:TO]->(A) | [C.date, CU.username, C.comment]] AS comments',id=id
         )
         answers = []
-        for r in  result:
-            string = f"{r['U']['username']}: {r['A']['answer']}"
-            answers.append(string)
-        a_text = "<br>".join(answers)
+        for r in result:
+            string = f"<b>{r['U']['username']}:</b> {r['A']['answer']}"
+            
+            comments = [f"<li>{comment[1]}: {comment[2]}</li>" for comment in sorted(r['comments'])]
+            answers.append((string, r['A'].id, comments))
+        a_text = "<ul>"
+        for ans, a_id, comms in answers:
+            a_text += f"<li>{ans}<ul>"
+            a_text += "".join(comms)
+            if logged_in:
+                a_text += f'''<li><form method="post">
+                Comment: <input type="text" id="comment" name="comment">
+                <input type="hidden" name="a_id" value={a_id}>
+                <input type="submit" value="Send">
+                </form></li>'''
+            a_text += "</ul></li>"
+        a_text += "</ul>"
+
         q_text = f'''
         <p>Question:</p>
         <h1>{username}</h1>
         <h1>{title}</h1>
-        <p>{question}</p>'''
+        <p>{question}</p>
+        Comments: <br>
+        <ul>
+            {"".join(question_comments)}'''
+        if logged_in:
+            q_text +=   f'''<li><form method="post">
+                                Comment: <input type="text" id="comment" name="comment">
+                                <input type="hidden" name="q_id" value={id}>
+                                <input type="submit" value="Send">
+                                </form></li>
+                            </ul>'''
+        q_text += 'Answers: <br>'
         form_text=f'''
         <form method="post">
            <label for="answer">Answer:</label><br>
@@ -220,19 +281,10 @@ def q(id):
            <input type="submit" value="Submit">
        </form>
         '''
-        if 'username' not in session:
+        if not logged_in:
             return q_text+a_text
-        if request.method == 'POST':
-            answer = request.form['answer']
-            username = session['username']
-            date = DateTime.now()
-            db.run(
-                r'MATCH (U:User {username:$username}), (Q:Question {id:$id}) CREATE (Q)<-[:TO]-(A:Answer {answer:$answer, date:$date, votes: 0}) <-[:ANSWERED]-(U)',
-                username = username, id=id, answer=answer, date=date
-            )
-            return redirect(url_for('q', id=id))
 
-        return q_text+form_text+a_text
+        return q_text+a_text+form_text
         # return f'''<h1>{title}</h1>'''    
 # HTML-собрать и на странице поста указать автора поста
 
