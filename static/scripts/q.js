@@ -34,13 +34,14 @@ $(document).ready(function() {
     });
 
     function updateVotes(votes, inc) {
+        if (votes.attr('logged_in') === 'False') return
         var current = +votes.attr('current_vote')
         var newInc = inc;
         if (current == inc) {
             newInc = 0;
         }
         
-        if (votes.attr('q_id') !== null) {
+        if (votes.attr('q_id') !== undefined) {
             $.post('/votes', {
                 'q_id': votes.attr('q_id'),
                 'vote': newInc

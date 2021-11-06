@@ -1,7 +1,7 @@
 import os, string
 from flask import Flask, g, request, session, render_template, abort
 from flask.helpers import url_for
-from neo4j import GraphDatabase
+from neo4j import GraphDatabase, unit_of_work
 from neo4j.time import DateTime
 
 import bcrypt, base64
@@ -184,8 +184,8 @@ def question():
             return redirect(url_for('q', id=id))
    
     return form_text
- 
- 
+
+
 @app.route("/q/<id>",methods=['POST', 'GET'])
 def q(id):
     with get_db().session() as db:
@@ -218,8 +218,10 @@ def q(id):
                 )
             return redirect(url_for('q', id=id))
 
+        username = session['username'] if 'username' in session else ''
+
         result = db.run(
-        r'MATCH (Q:Question {id: $id})<-[r:ASKED]-(U:User) return Q,U',id=id
+        r'MATCH (Q:Question {id: $id})<-[r:ASKED]-(U:User) OPTIONAL MATCH (:User {username:$username})-[v:VOTED]->(Q) return Q,U,v',id=id, username=username
         ).single()
         if result is None:
             abort(404)
@@ -227,10 +229,12 @@ def q(id):
         #словарь где Q - переменная с узлом, а title - поле/свойство во узла
         data = {
             'question' : {
+                'id': id,
                 'title': result['Q']['title'],
                 'text': result['Q']['question'],
                 'date': result['Q']['date'],
                 'votes': result['Q']['votes'],
+                'current_vote': result['v']['vote'] if result['v'] is not None else 0,
                 'author': {'name': result['U']['username']},
                 'comments': []
             }, 
@@ -247,7 +251,7 @@ def q(id):
             })
 
         result = db.run(
-        r'MATCH (Q:Question {id: $id})<-[:TO]-(A:Answer)<-[:ANSWERED]-(U:User) return A,U,[(CU:User)-[:COMMENTED]->(C:Comment)-[:TO]->(A) | [C.date, CU.username, C.comment]] AS comments',id=id
+        r'MATCH (Q:Question {id: $id})<-[:TO]-(A:Answer)<-[:ANSWERED]-(U:User) OPTIONAL MATCH (:User {username:$username})-[v:VOTED]->(A) return A,U,[(CU:User)-[:COMMENTED]->(C:Comment)-[:TO]->(A) | [C.date, CU.username, C.comment]] AS comments,v',id=id, username=username
         )
         for r in result:
             answer = {
@@ -256,6 +260,7 @@ def q(id):
                 'date': r['A']['date'],
                 'author': {'name': r['U']['username']},
                 'votes': r['A']['votes'],
+                'current_vote': r['v']['vote'] if r['v'] is not None else 0,
                 'comments': [{
                         'date': comment[0],
                         'text': comment[2],
@@ -267,6 +272,66 @@ def q(id):
         return render_template('q.html', data=data, logged_in=logged_in)
         # return f'''<h1>{title}</h1>'''    
 # HTML-собрать и на странице поста указать автора поста
+
+@app.route("/votes",methods=['POST'])
+def votes():
+    @unit_of_work(timeout=5)
+    def trans_func(tx, form, username):
+        vote = int(form['vote'])
+        print(vote)
+        if (vote not in [-1, 0, 1]): return
+        if 'q_id' in form:
+            q_id = form['q_id']
+            result = tx.run(
+                r'MATCH (U:User {username:$username})-[v:VOTED]->(Q:Question {id:$id}) RETURN v',
+                username = username, id=q_id
+            ).single()
+            if result is None:
+                old_vote = 0
+            else:
+                old_vote = result['v']['vote']
+            tx.run(
+                r'MATCH (U:User {username:$username})-[v1:VOTED]->(Q:Question {id:$id}) DELETE v1',
+                username = username, id=q_id
+            )
+            if vote != 0:
+                tx.run(
+                    r'MATCH (U:User {username:$username}), (Q:Question {id:$id}) CREATE (U)-[v2:VOTED {vote:$vote}]->(Q)',
+                    username = username, id=q_id, vote=vote
+                )
+            tx.run(
+                r'MATCH (Q:Question {id:$id}) SET Q.votes = Q.votes + $inc',
+                username = username, id=q_id, inc=vote - old_vote
+            )
+        elif 'a_id' in form:
+            a_id = form['a_id']
+            result = tx.run(
+                r'MATCH (U:User {username:$username})-[v:VOTED]->(A:Answer) WHERE id(A) = $a_id RETURN v',
+                username = username, a_id=int(a_id)
+            ).single()
+            if result is None:
+                old_vote = 0
+            else:
+                old_vote = result['v']['vote']
+            tx.run(
+                r'MATCH (U:User {username:$username})-[v1:VOTED]->(A:Answer) WHERE id(A) = $a_id DELETE v1',
+                username = username, a_id=int(a_id)
+            )
+            if vote != 0:
+                tx.run(
+                    r'MATCH (U:User {username:$username}), (A:Answer) WHERE id(A) = $a_id CREATE (U)-[v2:VOTED {vote:$vote}]->(A)',
+                    username = username, a_id=int(a_id), vote=vote
+                )
+            tx.run(
+                r'MATCH (A:Answer) WHERE id(A)=$a_id SET A.votes = A.votes + $inc',
+                username = username, a_id=int(a_id), inc=vote - old_vote
+            )
+    
+    with get_db().session() as db:
+        logged_in = 'username' in session
+        if logged_in:
+            db.write_transaction(trans_func, request.form, session['username'])
+    return ''
 
 @app.route("/search")
 def search():

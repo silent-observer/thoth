@@ -16,14 +16,14 @@
       </div>
     </div>
     <div class="qheader-user">
-      <div class="voting" q_id="{{data['question']['id']}}" current_vote="0">
-        <div class="vote-up">
+      <div class="voting" q_id="{{data['question']['id']}}" current_vote="{{data['question']['current_vote']}}" logged_in="{{logged_in}}">
+        <div class="{{'vote-up' + (' vote-selected' if data['question']['current_vote'] == 1 else '')}}">
           <svg width="16" height="8" viewBox="0 0 16 7" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M8.20989 0.128235L15.7891 6.69206H0.630644L8.20989 0.128235Z" fill="#5C5252"/> <!--#8CAF00-->
           </svg>
         </div>
         <div class="vote-text">{{data['question']['votes']}}</div>
-        <div class="vote-down">
+        <div class="{{'vote-down' + (' vote-selected' if data['question']['current_vote'] == -1 else '')}}">
           <svg width="16" height="8" viewBox="0 0 16 8" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M8.20991 7.20667L0.630655 0.642842L15.7892 0.642842L8.20991 7.20667Z" fill="#5C5252"/>
           </svg>
@@ -71,14 +71,14 @@
       <span class="date">{{answer['date']}}</span>
     </div>
     <div class="aheader-user">
-      <div class="voting" a_id="{{answer['id']}}" current_vote="0">
-        <div class="vote-up">
+      <div class="voting" a_id="{{answer['id']}}" current_vote="{{answer['current_vote']}}" logged_in="{{logged_in}}">
+        <div class="{{'vote-up' + (' vote-selected' if answer['current_vote'] == 1 else '')}}">
           <svg width="16" height="8" viewBox="0 0 16 7" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M8.20989 0.128235L15.7891 6.69206H0.630644L8.20989 0.128235Z" fill="#5C5252"/> <!--#8CAF00-->
           </svg>
         </div>
         <div class="vote-text">{{answer['votes']}}</div>
-        <div class="vote-down">
+        <div class="{{'vote-down' + (' vote-selected' if answer['current_vote'] == -1 else '')}}">
           <svg width="16" height="8" viewBox="0 0 16 8" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M8.20991 7.20667L0.630655 0.642842L15.7892 0.642842L8.20991 7.20667Z" fill="#5C5252"/>
           </svg>
