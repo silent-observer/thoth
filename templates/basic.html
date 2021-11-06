@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+{%block head%}
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="initial-scale=1.0">
+  <title>Thoth</title>
+  <link rel="stylesheet" href="{{url_for('static', filename='question.css')}}">
+{%endblock%}
+</head>
+<body>
+  <header>
+    <div id="header-container">
+      <h1 id="header-logo">THOTH</h1>
+      <div id="search-bar">
+        <img id="search-icon" src="{{url_for('static', filename='search_icon.png')}}">
+        <input id="search-input">
+      </div>
+      <img id="login-icon" src="{{url_for('static', filename='login_icon.png')}}">
+    </div>
+  </header>
+  <div id="wrapper">
+    <div id="main-container">
+      {%block content%}{%endblock%}
+    </div>
+  </div>
+</body>
+</html>

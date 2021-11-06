@@ -1,5 +1,5 @@
 import os, string
-from flask import Flask, g, request, session
+from flask import Flask, g, request, session, render_template
 from flask.helpers import url_for
 from neo4j import GraphDatabase
 from neo4j.time import DateTime
@@ -223,68 +223,46 @@ def q(id):
         ).single()
         if result is None:
             abort(404)
-        title = result['Q']['title'] #словарь где Q - переменная с узлом, а title - поле/свойство во узла
-        question =result['Q']['question']
-        username = result['U']['username']
+
+        #словарь где Q - переменная с узлом, а title - поле/свойство во узла
+        data = {
+            'question' : {
+                'title': result['Q']['title'],
+                'text': result['Q']['question'],
+                'date': result['Q']['date'],
+                'author': {'name': result['U']['username']},
+                'comments': []
+            }, 
+            'answers': []
+        }
 
         result = db.run(
         r'MATCH (Q:Question {id: $id})<-[:TO]-(C:Comment)<-[:COMMENTED]-(U:User) return C,U ORDER BY C.date',id=id
         )
-        question_comments = []
         for r in result:
-            string = f"<li>{r['U']['username']}: {r['C']['comment']}</li>"
-            question_comments.append(string)
+            data['question']['comments'].append({
+                'text': r['C']['comment'],
+                'author': {'name': r['U']['username']}
+            })
 
         result = db.run(
         r'MATCH (Q:Question {id: $id})<-[:TO]-(A:Answer)<-[:ANSWERED]-(U:User) return A,U,[(CU:User)-[:COMMENTED]->(C:Comment)-[:TO]->(A) | [C.date, CU.username, C.comment]] AS comments',id=id
         )
-        answers = []
         for r in result:
-            string = f"<b>{r['U']['username']}:</b> {r['A']['answer']}"
-            
-            comments = [f"<li>{comment[1]}: {comment[2]}</li>" for comment in sorted(r['comments'])]
-            answers.append((string, r['A'].id, comments))
-        a_text = "<ul>"
-        for ans, a_id, comms in answers:
-            a_text += f"<li>{ans}<ul>"
-            a_text += "".join(comms)
-            if logged_in:
-                a_text += f'''<li><form method="post">
-                Comment: <input type="text" id="comment" name="comment">
-                <input type="hidden" name="a_id" value={a_id}>
-                <input type="submit" value="Send">
-                </form></li>'''
-            a_text += "</ul></li>"
-        a_text += "</ul>"
+            answer = {
+                'id': r['A'].id,
+                'text': r['A']['answer'],
+                'date': r['A']['date'],
+                'author': {'name': r['U']['username']},
+                'comments': [{
+                        'date': comment[0],
+                        'text': comment[2],
+                        'author': {'name': comment[1]}
+                    } for comment in sorted(r['comments'])]
+            }
+            data['answers'].append(answer)
 
-        q_text = f'''
-        <p>Question:</p>
-        <h1>{username}</h1>
-        <h1>{title}</h1>
-        <p>{question}</p>
-        Comments: <br>
-        <ul>
-            {"".join(question_comments)}'''
-        if logged_in:
-            q_text +=   f'''<li><form method="post">
-                                Comment: <input type="text" id="comment" name="comment">
-                                <input type="hidden" name="q_id" value={id}>
-                                <input type="submit" value="Send">
-                                </form></li>
-                            </ul>'''
-        q_text += 'Answers: <br>'
-        form_text=f'''
-        <form method="post">
-           <label for="answer">Answer:</label><br>
-           <textarea id="answer" name="answer"></textarea>
-           <br>
-           <input type="submit" value="Submit">
-       </form>
-        '''
-        if not logged_in:
-            return q_text+a_text
-
-        return q_text+a_text+form_text
+        return render_template('q.html', data=data, logged_in=logged_in)
         # return f'''<h1>{title}</h1>'''    
 # HTML-собрать и на странице поста указать автора поста
 
