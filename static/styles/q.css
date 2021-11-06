@@ -197,7 +197,18 @@ textarea {
   justify-content: center;
   align-content: center;
   line-height: 25px;
+  transition: background-color 0.3s;
 }
+
+.comment-send-btn:hover, #answer-send-btn:hover {
+  background: rgba(140, 175, 0, 0.56);
+}
+
+.comment-send-btn:active, #answer-send-btn:active {
+  background: rgba(97, 121, 0, 0.67);
+}
+
+
 .question-main, .answer-main, .send-answer {
   display: flex;
   flex-direction: column;

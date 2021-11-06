@@ -59,7 +59,7 @@
       </div>
       <textarea class="comment-text"></textarea>
     </div>
-    <button class="comment-send-btn"><span>Отправить</span></button>
+    <button class="comment-send-btn" q_id="{{data['question']['id']}}"><span>Отправить</span></button>
     {%endif%}
   </div>
 </section>
@@ -113,7 +113,7 @@
       </div>
       <textarea class="comment-text"></textarea>
     </div>
-    <button class="comment-send-btn"><span>Отправить</span></button>
+    <button class="comment-send-btn" a_id="{{answer['id']}}"><span>Отправить</span></button>
     {%endif%}
   </div>
 </section>
