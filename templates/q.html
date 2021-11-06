@@ -1,7 +1,8 @@
 {%extends "basic.html"%}
 {%block head%}
   {{super()}}
-  <link rel="stylesheet" href="{{url_for('static', filename='q.css')}}">
+  <link rel="stylesheet" href="{{url_for('static', filename='styles/q.css')}}">
+  <script src="{{url_for('static', filename='scripts/q.js')}}"></script>
 {%endblock%}
 
 {%block content%}
@@ -30,7 +31,7 @@
       </div>
       <div class="username">{{data['question']['author']['name']}}</div>
       <div class="profile-picture">
-        <img src="{{url_for('static', filename='default_prof_pic.png')}}">
+        <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
       </div>
     </div>
   </div>
@@ -43,7 +44,7 @@
     {%for comment in data['question']['comments']%}
       <div class="comment">
         <div class="profile-picture">
-          <img src="{{url_for('static', filename='default_prof_pic.png')}}">
+          <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
         </div>
         <div class="comment-body">
           <p>{{comment['text']}}</p>
@@ -54,7 +55,7 @@
     {%if logged_in%}
     <div class="comment-send-form">
       <div class="profile-picture">
-        <img src="{{url_for('static', filename='default_prof_pic.png')}}">
+        <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
       </div>
       <textarea class="comment-text"></textarea>
     </div>
@@ -85,7 +86,7 @@
       </div>
       <div class="username">{{answer['author']['name']}}</div>
       <div class="profile-picture">
-        <img src="{{url_for('static', filename='default_prof_pic.png')}}">
+        <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
       </div>
     </div>
   </div>
@@ -97,7 +98,7 @@
     {%for comment in answer['comments']%}
       <div class="comment">
         <div class="profile-picture">
-          <img src="{{url_for('static', filename='default_prof_pic.png')}}">
+          <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
         </div>
         <div class="comment-body">
           <p>{{comment['text']}}</p>
@@ -108,7 +109,7 @@
     {%if logged_in%}
     <div class="comment-send-form">
       <div class="profile-picture">
-        <img src="{{url_for('static', filename='default_prof_pic.png')}}">
+        <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
       </div>
       <textarea class="comment-text"></textarea>
     </div>

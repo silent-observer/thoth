@@ -4,10 +4,10 @@
 
 @font-face {
   font-family: 'Strong';
-  src:url('../static/Strong.ttf.woff') format('woff'),
-      url('../static/Strong.ttf.svg#Strong') format('svg'),
-      url('../static/Strong.ttf.eot'),
-      url('../static/Strong.ttf.eot?#iefix') format('embedded-opentype'); 
+  src:url('../resources/Strong.ttf.woff') format('woff'),
+      url('../resources/Strong.ttf.svg#Strong') format('svg'),
+      url('../resources/Strong.ttf.eot'),
+      url('../resources/Strong.ttf.eot?#iefix') format('embedded-opentype'); 
   font-weight: normal;
   font-style: normal;
 }
