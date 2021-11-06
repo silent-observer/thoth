@@ -230,6 +230,7 @@ def q(id):
                 'title': result['Q']['title'],
                 'text': result['Q']['question'],
                 'date': result['Q']['date'],
+                'votes': result['Q']['votes'],
                 'author': {'name': result['U']['username']},
                 'comments': []
             }, 
@@ -254,6 +255,7 @@ def q(id):
                 'text': r['A']['answer'],
                 'date': r['A']['date'],
                 'author': {'name': r['U']['username']},
+                'votes': r['A']['votes'],
                 'comments': [{
                         'date': comment[0],
                         'text': comment[2],

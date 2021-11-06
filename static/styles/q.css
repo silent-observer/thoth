@@ -83,6 +83,18 @@
   display: block;
 }
 
+.vote-up > svg *, .vote-down > svg * {
+  transition: fill 0.3s;
+}
+
+.vote-up:hover > svg *, .vote-down:hover > svg * {
+  fill: rgba(140, 175, 0, 0.56);
+}
+
+.vote-selected > svg *, .vote-selected:hover > svg * {
+  fill: #8CAF00;
+}
+
 .vote-text {
   font-size: 13.5511px;
   letter-spacing: 0.2em;

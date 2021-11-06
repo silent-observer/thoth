@@ -1,4 +1,5 @@
 $(document).ready(function() {
+
     $('.comment-send-btn').click(function() {
         var btn = $(this)
         var text = btn.parent().find('.comment-text').val()
@@ -30,5 +31,42 @@ $(document).ready(function() {
         }, function(){
             location.reload()
         })
+    });
+
+    function updateVotes(votes, inc) {
+        var current = +votes.attr('current_vote')
+        var newInc = inc;
+        if (current == inc) {
+            newInc = 0;
+        }
+        
+        if (votes.attr('q_id') !== null) {
+            $.post('/votes', {
+                'q_id': votes.attr('q_id'),
+                'vote': newInc
+            })
+        } else {
+            $.post('/votes', {
+                'a_id': votes.attr('a_id'),
+                'vote': newInc
+            })
+        }
+        let v = votes.find('.vote-text').text()
+        votes.find('.vote-text').text(+v - current + newInc)
+
+        votes.find('.vote-up, .vote-down').removeClass('vote-selected')
+        if (newInc === 1)
+            votes.find('.vote-up').addClass('vote-selected')
+        if (newInc === -1)
+            votes.find('.vote-down').addClass('vote-selected')
+        votes.attr('current_vote', newInc)
+    }
+
+    $('.vote-up').click(function() {
+        updateVotes($(this).parent(), 1)
+    });
+
+    $('.vote-down').click(function() {
+        updateVotes($(this).parent(), -1)
     });
 })
