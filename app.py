@@ -2,16 +2,38 @@ import os, string
 from flask import Flask, g, request, session, render_template, abort
 from flask.helpers import url_for
 from neo4j import GraphDatabase, unit_of_work
-from neo4j.time import DateTime
+from neo4j.time import Date, DateTime
 
 import bcrypt, base64
 from werkzeug.utils import redirect
-import random
-app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+import random, atexit
+from apscheduler.schedulers.background import BackgroundScheduler
 
 neo4j_pass = os.environ.get('NEO4J_PASS')
 neo4j_uri = 'neo4j+s://1f59f68c.databases.neo4j.io'
+
+def update_recommendations():
+    with GraphDatabase.driver(neo4j_uri, auth=('neo4j', neo4j_pass)) as local_db:
+        with local_db.session() as db:
+            db.run(r'''
+                MATCH (a:Question)<-[:VIEWED]-(u:User)-[:VIEWED]->(b:Question)
+                WHERE id(a) < id(b) AND (a.needs_update OR b.needs_update)
+                WITH a, b, count(u) as aAndB
+                WITH a, b, aAndB, toFloat(aAndB)/toFloat(a.views+b.views-aAndB) as j
+                WHERE j > 0.15
+                MERGE (a)-[s:SIMILAR]-(b)
+                SET s.jaccard = j, a.needs_update = false, b.needs_update = false;
+            ''')
+            print('Updated recommendations!')
+
+sched = BackgroundScheduler(daemon=True)
+sched.add_job(update_recommendations, 'interval', minutes=60)
+sched.start()
+
+atexit.register(lambda: sched.shutdown(wait=False))
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -203,7 +225,7 @@ def question():
                 if result is None:
                     break
             db.run(
-                r'MATCH (U:User {username:$username}) CREATE (Q:Question {title:$title, question:$question, id: $id, date: $date, votes: 0}) <-[r:ASKED]-(U)',
+                r'MATCH (U:User {username:$username}) CREATE (Q:Question {title:$title, question:$question, id: $id, date: $date, votes: 0, views: 0, needs_update: false}) <-[r:ASKED]-(U)',
                 title=title, question=question, username = username, id=id, date=date
             )
             return redirect(url_for('q', id=id))
@@ -287,16 +309,19 @@ def q(id):
                 'votes': r['A']['votes'],
                 'current_vote': r['v']['vote'] if r['v'] is not None else 0,
                 'comments': [{
-                        'date': comment[0],
-                        'text': comment[2],
-                        'author': {'name': comment[1]}
-                    } for comment in sorted(r['comments'])]
+                    'date': comment[0],
+                    'text': comment[2],
+                    'author': {'name': comment[1]}
+                } for comment in sorted(r['comments'])]
             }
             data['answers'].append(answer)
 
         if logged_in:
-            db.run(
-                r'MATCH (Q:Question {id: $id}), (U:User {username:$username}) MERGE (U)-[:VIEWED:PENDING]->(Q)',
+            db.run(r'''
+                MATCH (Q:Question {id: $id}), (U:User {username:$username}) 
+                MERGE (U)-[r:VIEWED]->(Q)
+                ON CREATE
+                SET Q.views = Q.views + 1, Q.needs_update = true''',
                 id=id, username=username
             )
 
