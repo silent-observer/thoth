@@ -1,0 +1,48 @@
+{%extends "basic.html"%}
+{%block head%}
+  {{super()}}
+  <link rel="stylesheet" href="{{url_for('static', filename='styles/feed.css')}}">
+{%endblock%}
+
+{%block content%}
+{%for q in data['questions']%}
+<section class="question">
+  <div class="question-header">
+    <div class="qheader-date">
+      <span class="date">{{q['date']}}</span>
+      <div class="tags-container">
+        <span class="tag">Линейная алгебра</span>
+        <span class="tag">Диффуры</span>
+      </div>
+    </div>
+    <div class="qheader-user">
+      <div class="voting" q_id="{{q['id']}}" current_vote="{{q['current_vote']}}" logged_in="{{logged_in}}">
+        <div class="{{'vote-up' + (' vote-selected' if q['current_vote'] == 1 else '')}}">
+          <svg width="16" height="8" viewBox="0 0 16 7" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8.20989 0.128235L15.7891 6.69206H0.630644L8.20989 0.128235Z" fill="#5C5252"/> <!--#8CAF00-->
+          </svg>
+        </div>
+        <div class="vote-text">{{q['votes']}}</div>
+        <div class="{{'vote-down' + (' vote-selected' if q['current_vote'] == -1 else '')}}">
+          <svg width="16" height="8" viewBox="0 0 16 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8.20991 7.20667L0.630655 0.642842L15.7892 0.642842L8.20991 7.20667Z" fill="#5C5252"/>
+          </svg>
+        </div>
+      </div>
+      <div class="username">{{q['author']['name']}}</div>
+      <div class="profile-picture">
+        <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
+      </div>
+    </div>
+  </div>
+  <div class="question-main">
+    <div class="question-body">
+      <div class="question-title">
+        <a href="{{url_for('q', id=q['id'])}}">{{q['title']}}</a>
+      </div>
+      <p>{{q['text']}}</p>
+    </div>
+  </div>
+</section>
+{%endfor%}
+{%endblock%}

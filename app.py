@@ -28,23 +28,49 @@ def close_connection(exception):
 
 @app.route("/")
 def main():
-    names = []
+    logged_in = 'username' in session
     with get_db().session() as db:
-        result = db.run('MATCH (n:Person) RETURN n')
+        questions = []
+        if logged_in:
+            username = session['username']
+            result = db.run(r'''
+                MATCH (u:User {username:$username})
+                MATCH (u)-[v:VIEWED]->(qv:Question)
+                MATCH (qv)-[s:SIMILAR]-(qs:Question)
+                WHERE NOT (u)-[:VIEWED]->(qs)
+                WITH u, qs, sum(s.jaccard) as j
+                MATCH (a:User)-[:ASKED]->(qs)
+                OPTIONAL MATCH (u)-[voted:VOTED]->(qs)
+                RETURN a, qs, voted, j
+                ORDER BY j DESC
+                LIMIT 50''', username=username
+            )
+        else:
+            result = db.run(r'''
+                MATCH (qs:Question)
+                WITH qs, duration.inSeconds(datetime(), qs.date).seconds as secondsPast
+                WITH qs, qs.views + qs.votes * 2 - secondsPast + 50.0 / (1.0 + 0.00001 * secondsPast) as j
+                MATCH (a:User)-[:ASKED]->(qs)
+                RETURN a, qs, j
+                ORDER BY j DESC
+                LIMIT 50'''
+            )
         for r in result:
-            names.append(r['n']['name'])
-    if 'username' in session:
-        text = f'''
-            <p>You are logged in as "{session["username"]}".
-            <a href={url_for('logout')}>Logout</a></p>
-            '''
-    else:
-        text = f'''
-            <p>You are not logged in.</p>
-            <p><a href={url_for('login')}>Login</a></p>
-            <p><a href={url_for('register')}>Register</a></p>
-            '''
-    return text + "<p>People:<br>" + '<br>'.join(names) + "</p>"
+            print(type(r['qs']['date']))
+            questions.append({
+                'id': r['qs']['id'],
+                'title': r['qs']['title'],
+                'text': r['qs']['question'],
+                'date': r['qs']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
+                'votes': r['qs']['votes'],
+                'current_vote': r['voted']['vote'] if 'voted' in r and r['voted'] is not None else 0,
+                'author': {'name': r['a']['username']}
+            })
+
+        data = {
+            'questions': questions
+        }
+    return render_template('feed.html', data=data, logged_in=logged_in)
 
 @app.route("/users")
 def users():
@@ -145,7 +171,6 @@ def logout():
     return redirect(url_for('main'))
 
 @app.route("/question", methods=['POST', 'GET'])
-
 def question():
     if 'username' not in session:
         return redirect(url_for('login'))
@@ -232,7 +257,7 @@ def q(id):
                 'id': id,
                 'title': result['Q']['title'],
                 'text': result['Q']['question'],
-                'date': result['Q']['date'],
+                'date': result['Q']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
                 'votes': result['Q']['votes'],
                 'current_vote': result['v']['vote'] if result['v'] is not None else 0,
                 'author': {'name': result['U']['username']},
@@ -268,6 +293,12 @@ def q(id):
                     } for comment in sorted(r['comments'])]
             }
             data['answers'].append(answer)
+
+        if logged_in:
+            db.run(
+                r'MATCH (Q:Question {id: $id}), (U:User {username:$username}) MERGE (U)-[:VIEWED:PENDING]->(Q)',
+                id=id, username=username
+            )
 
         return render_template('q.html', data=data, logged_in=logged_in)
         # return f'''<h1>{title}</h1>'''    
