@@ -196,41 +196,48 @@ def logout():
 def question():
     if 'username' not in session:
         return redirect(url_for('login'))
-       
-    form_text = '''
-       <p>Question form:</p>
-       <form method="post">
-           <label for="title">title:</label><br>
-           <input type="text" id="title" name="title"><br>
-           <label for="question">Question:</label><br>
-           <textarea id="question" name="question"></textarea>
-           <br>
-           <input type="submit" value="Submit">
-       </form>
-       '''
+    
+
+    error = None
     if request.method == 'POST':
         title = request.form['title']
         question = request.form['question']
         username = session['username']
+        discipline = request.form['discipline']
         date = DateTime.now()
- 
-        with get_db().session() as db:
-           
-            while (True):
-                id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
-                result = db.run(
-                r'MATCH (Q:Question {id: $id}) RETURN Q',
-                id = id
-                ).single()
-                if result is None:
-                    break
-            db.run(
-                r'MATCH (U:User {username:$username}) CREATE (Q:Question {title:$title, question:$question, id: $id, date: $date, votes: 0, views: 0, needs_update: false}) <-[r:ASKED]-(U)',
-                title=title, question=question, username = username, id=id, date=date
-            )
-            return redirect(url_for('q', id=id))
+
+        if len(title) < 10 or len(title) > 100:
+            error = "Заголовок должен содержать не менее 10 и не более 100 символов."
+        if len(question) < 10 or len(question) > 2000:
+            error = "Текст вопроса должен содержать не менее 10 и не более 2000 символов."
+        if discipline is None or discipline == "":
+            error = "Выберите предмет и дисциплину."
+
+        if error is None:
+            with get_db().session() as db:
+                while (True):
+                    id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
+                    result = db.run(
+                    r'MATCH (Q:Question {id: $id}) RETURN Q',
+                    id = id
+                    ).single()
+                    if result is None:
+                        break
+                db.run(
+                    r'MATCH (U:User {username:$username}), (D:Discipline {name:$discipline}) CREATE (D)<-[:CORRESPONDS]-(Q:Question {title:$title, question:$question, id: $id, date: $date, votes: 0, views: 0, needs_update: false})<-[r:ASKED]-(U)',
+                    title=title, question=question, username = username, id=id, date=date, discipline=discipline
+                )
+                return redirect(url_for('q', id=id))
    
-    return form_text
+
+    with get_db().session() as db:
+        result = db.run(r'MATCH (s:Subject)-[:CONTAINS]->(d:Discipline) RETURN s, d')
+        data = {}
+        for r in result:
+            if r['s']['name'] not in data:
+                data[r['s']['name']] = []
+            data[r['s']['name']].append(r['d']['name'])
+    return render_template('question.html', data=data, error=error)
 
 
 @app.route("/q/<id>",methods=['POST', 'GET'])

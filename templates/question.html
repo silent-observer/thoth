@@ -1,0 +1,32 @@
+{%extends "basic.html"%}
+{%block head%}
+  {{super()}}
+  <link rel="stylesheet" href="{{url_for('static', filename='styles/question.css')}}">
+  <script>let data = {{data |tojson|safe}};</script>
+  <script src="{{url_for('static', filename='scripts/question.js')}}"></script>
+{%endblock%}
+
+{%block content%}
+<section class="question">
+{%if error is not none%}
+  <p>Ошибка: {{error}}</p>
+{%endif%}
+  <p>Форма вопроса:</p>
+  <form method="post">
+      <label for="title">Заголовок:</label><br>
+      <input type="text" id="title" name="title"><br>
+      <label for="question">Вопрос:</label><br>
+      <textarea id="question" name="question"></textarea>
+      <br>
+      <div id="subject-div">
+        <label for="subject">Предмет:</label><br>
+        <select name="subject" id="subject"></select>
+      </div>
+      <div id="discipline-div" style="display: none;">
+        <label for="subject">Дисциплина:</label><br>
+        <select name="discipline" id="discipline"></select>
+      </div>
+      <input type="submit" value="Submit">
+  </form>
+</section>
+{%endblock%}
