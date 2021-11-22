@@ -61,9 +61,9 @@ def main():
                 MATCH (qv)-[s:SIMILAR]-(qs:Question)
                 WHERE NOT (u)-[:VIEWED]->(qs)
                 WITH u, qs, sum(s.jaccard) as j
-                MATCH (a:User)-[:ASKED]->(qs)
+                MATCH (a:User)-[:ASKED]->(qs)-[:CORRESPONDS]->(d:Discipline)
                 OPTIONAL MATCH (u)-[voted:VOTED]->(qs)
-                RETURN a, qs, voted, j
+                RETURN a, qs, d, voted, j
                 ORDER BY j DESC
                 LIMIT 50''', username=username
             )
@@ -72,13 +72,12 @@ def main():
                 MATCH (qs:Question)
                 WITH qs, duration.inSeconds(datetime(), qs.date).seconds as secondsPast
                 WITH qs, qs.views + qs.votes * 2 - secondsPast + 50.0 / (1.0 + 0.00001 * secondsPast) as j
-                MATCH (a:User)-[:ASKED]->(qs)
-                RETURN a, qs, j
+                MATCH (a:User)-[:ASKED]->(qs)-[:CORRESPONDS]->(d:Discipline)
+                RETURN a, qs, d, j
                 ORDER BY j DESC
                 LIMIT 50'''
             )
         for r in result:
-            print(type(r['qs']['date']))
             questions.append({
                 'id': r['qs']['id'],
                 'title': r['qs']['title'],
@@ -86,7 +85,8 @@ def main():
                 'date': r['qs']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
                 'votes': r['qs']['votes'],
                 'current_vote': r['voted']['vote'] if 'voted' in r and r['voted'] is not None else 0,
-                'author': {'name': r['a']['username']}
+                'author': {'name': r['a']['username']},
+                'discipline': r['d']['name']
             })
 
         data = {
@@ -268,7 +268,10 @@ def q(id):
         username = session['username'] if 'username' in session else ''
 
         result = db.run(
-        r'MATCH (Q:Question {id: $id})<-[r:ASKED]-(U:User) OPTIONAL MATCH (:User {username:$username})-[v:VOTED]->(Q) return Q,U,v',id=id, username=username
+        r'''
+            MATCH (D:Discipline)<-[:CORRESPONDS]-(Q:Question {id: $id})<-[r:ASKED]-(U:User) 
+            OPTIONAL MATCH (:User {username:$username})-[v:VOTED]->(Q) 
+            RETURN Q,U,D,v''',id=id, username=username
         ).single()
         if result is None:
             abort(404)
@@ -283,6 +286,7 @@ def q(id):
                 'votes': result['Q']['votes'],
                 'current_vote': result['v']['vote'] if result['v'] is not None else 0,
                 'author': {'name': result['U']['username']},
+                'discipline': result['D']['name'],
                 'comments': []
             }, 
             'answers': []
@@ -334,7 +338,6 @@ def votes():
     @unit_of_work(timeout=5)
     def trans_func(tx, form, username):
         vote = int(form['vote'])
-        print(vote)
         if (vote not in [-1, 0, 1]): return
         if 'q_id' in form:
             q_id = form['q_id']
