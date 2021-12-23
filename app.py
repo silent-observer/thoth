@@ -71,7 +71,7 @@ def main():
             result = db.run(r'''
                 MATCH (qs:Question)
                 WITH qs, duration.inSeconds(datetime(), qs.date).seconds as secondsPast
-                WITH qs, qs.views + qs.votes * 2 - secondsPast + 50.0 / (1.0 + 0.00001 * secondsPast) as j
+                WITH qs, qs.views + qs.rating * 2 - secondsPast + 50.0 / (1.0 + 0.00001 * secondsPast) as j
                 MATCH (a:User)-[:ASKED]->(qs)-[:CORRESPONDS]->(d:Discipline)
                 RETURN a, qs, d, j
                 ORDER BY j DESC
@@ -83,9 +83,9 @@ def main():
                 'title': r['qs']['title'],
                 'text': r['qs']['question'],
                 'date': r['qs']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
-                'votes': r['qs']['votes'],
+                'rating': r['qs']['rating'],
                 'current_vote': r['voted']['vote'] if 'voted' in r and r['voted'] is not None else 0,
-                'author': {'name': r['a']['username']},
+                'author': {'name': r['a']['username'], 'rating': r['a']['rating']},
                 'discipline': r['d']['name']
             })
 
@@ -140,7 +140,7 @@ def register():
                 )).decode('ascii')
             register_date = DateTime.now()
             db.run(
-                r'CREATE (n:User {username:$username, pass_hash:$pass_hash, register_date:$register_date})',
+                r'CREATE (n:User {username:$username, pass_hash:$pass_hash, register_date:$register_date, rating: 0})',
                 username=username, pass_hash=pass_hash, register_date=register_date
             )
             return redirect(url_for('users'))
@@ -224,7 +224,7 @@ def question():
                     if result is None:
                         break
                 db.run(
-                    r'MATCH (U:User {username:$username}), (D:Discipline {name:$discipline}) CREATE (D)<-[:CORRESPONDS]-(Q:Question {title:$title, question:$question, id: $id, date: $date, votes: 0, views: 0, needs_update: false})<-[r:ASKED]-(U)',
+                    r'MATCH (U:User {username:$username}), (D:Discipline {name:$discipline}) CREATE (D)<-[:CORRESPONDS]-(Q:Question {title:$title, question:$question, id: $id, date: $date, rating: 0, views: 0, needs_update: false})<-[r:ASKED]-(U)',
                     title=title, question=question, username = username, id=id, date=date, discipline=discipline
                 )
                 return redirect(url_for('q', id=id))
@@ -267,7 +267,7 @@ def q(id):
             else:
                 answer = request.form['answer']
                 db.run(
-                    r'MATCH (U:User {username:$username}), (Q:Question {id:$id}) CREATE (Q)<-[:TO]-(A:Answer {answer:$answer, date:$date, votes: 0}) <-[:ANSWERED]-(U)',
+                    r'MATCH (U:User {username:$username}), (Q:Question {id:$id}) CREATE (Q)<-[:TO]-(A:Answer {answer:$answer, date:$date, rating: 0}) <-[:ANSWERED]-(U)',
                     username = username, id=id, answer=answer, date=date
                 )
             return redirect(url_for('q', id=id))
@@ -276,9 +276,10 @@ def q(id):
 
         result = db.run(
         r'''
-            MATCH (D:Discipline)<-[:CORRESPONDS]-(Q:Question {id: $id})<-[r:ASKED]-(U:User) 
-            OPTIONAL MATCH (:User {username:$username})-[v:VOTED]->(Q) 
-            RETURN Q,U,D,v''',id=id, username=username
+            MATCH (D:Discipline)<-[:CORRESPONDS]-(Q:Question {id: $id})<-[r:ASKED]-(U:User)
+            OPTIONAL MATCH (u:User {username:$username})
+            OPTIONAL MATCH (u)-[v:VOTED]->(Q)
+            RETURN Q,U,D,v,u.rating as R''',id=id, username=username
         ).single()
         if result is None:
             abort(404)
@@ -289,13 +290,14 @@ def q(id):
                 'title': result['Q']['title'],
                 'text': result['Q']['question'],
                 'date': result['Q']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
-                'votes': result['Q']['votes'],
+                'rating': result['Q']['rating'],
                 'current_vote': result['v']['vote'] if result['v'] is not None else 0,
-                'author': {'name': result['U']['username']},
+                'author': {'name': result['U']['username'], 'rating': result['U']['rating']},
                 'discipline': result['D']['name'],
                 'comments': []
             }, 
-            'answers': []
+            'answers': [],
+            'me' : {'rating': result['R']}
         }
 
         result = db.run(
@@ -305,23 +307,23 @@ def q(id):
             data['question']['comments'].append({
                 'text': r['C']['comment'],
                 'id': r['C'].id,
-                'author': {'name': r['U']['username']}
+                'author': {'name': r['U']['username'], 'rating': r['U']['rating']}
             })
 
         result = db.run(
-        r'MATCH (Q:Question {id: $id})<-[:TO]-(A:Answer)<-[:ANSWERED]-(U:User) OPTIONAL MATCH (:User {username:$username})-[v:VOTED]->(A) return A,U,[(CU:User)-[:COMMENTED]->(C:Comment)-[:TO]->(A) | [C.date, CU.username, C.comment, id(C)]] AS comments,v',id=id, username=username
+        r'MATCH (Q:Question {id: $id})<-[:TO]-(A:Answer)<-[:ANSWERED]-(U:User) OPTIONAL MATCH (:User {username:$username})-[v:VOTED]->(A) return A,U,[(CU:User)-[:COMMENTED]->(C:Comment)-[:TO]->(A) | [C.date, CU.username, C.comment, id(C), CU.rating]] AS comments,v',id=id, username=username
         )
         for r in result:
             answer = {
                 'id': r['A'].id,
                 'text': r['A']['answer'],
                 'date': r['A']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
-                'author': {'name': r['U']['username']},
-                'votes': r['A']['votes'],
+                'author': {'name': r['U']['username'], 'rating': r['U']['rating']},
+                'rating': r['A']['rating'],
                 'current_vote': r['v']['vote'] if r['v'] is not None else 0,
                 'comments': [{
                     'date': comment[0].to_native().strftime('%d.%m.%Y %H:%M'),
-                    'author': {'name': comment[1]},
+                    'author': {'name': comment[1], 'rating': comment[4]},
                     'text': comment[2],
                     'id': comment[3]
                 } for comment in sorted(r['comments'])]
@@ -367,7 +369,7 @@ def votes():
                     username = username, id=q_id, vote=vote
                 )
             tx.run(
-                r'MATCH (Q:Question {id:$id}) SET Q.votes = Q.votes + $inc',
+                r'MATCH (Q:Question {id:$id})<-[:ASKED]-(U:User) SET Q.rating = Q.rating + $inc, U.rating = U.rating + $inc',
                 username = username, id=q_id, inc=vote - old_vote
             )
         elif 'a_id' in form:
@@ -390,7 +392,7 @@ def votes():
                     username = username, a_id=int(a_id), vote=vote
                 )
             tx.run(
-                r'MATCH (A:Answer) WHERE id(A)=$a_id SET A.votes = A.votes + $inc',
+                r'MATCH (A:Answer)<-[:ANSWERED]-(U:User) WHERE id(A)=$a_id SET A.rating = A.rating + $inc, U.rating = U.rating + $inc',
                 username = username, a_id=int(a_id), inc=vote - old_vote
             )
     
@@ -445,14 +447,20 @@ def reported():
             MATCH (:User)-[:REPORTED]->(q:Question)
             WITH DISTINCT q
             MATCH (d:Discipline)<-[:CORRESPONDS]-(q)<-[:ASKED]-(a:User)
+            RETURN d, a, q
+
+            UNION
+
+            MATCH (d:Discipline)<-[:CORRESPONDS]-(q:Question)<-[:ASKED]-(a:User)
+            WHERE q.rating < -10
             RETURN d, a, q''')
         questions = [{
             'id': r['q']['id'],
             'title': r['q']['title'],
             'text': r['q']['question'],
             'date': r['q']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
-            'votes': r['q']['votes'],
-            'author': {'name': r['a']['username']},
+            'rating': r['q']['rating'],
+            'author': {'name': r['a']['username'], 'rating': r['a']['rating']},
             'discipline': r['d']['name']
         } for r in result]
 
@@ -460,13 +468,19 @@ def reported():
             MATCH (:User)-[:REPORTED]->(a:Answer)
             WITH DISTINCT a
             MATCH (a)<-[:ANSWERED]-(u:User)
+            RETURN u, a
+            
+            UNION
+            
+            MATCH (a:Answer)<-[:ANSWERED]-(u:User)
+            WHERE a.rating < -10
             RETURN u, a''')
         answers = [{
             'id': r['a'].id,
             'text': r['a']['answer'],
             'date': r['a']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
-            'author': {'name': r['u']['username']},
-            'votes': r['a']['votes']
+            'author': {'name': r['u']['username'], 'rating': r['u']['rating']},
+            'rating': r['a']['rating']
         } for r in result]
         
         result = db.run(r'''
@@ -476,7 +490,7 @@ def reported():
             RETURN u, c''')
         comments = [{
             'date': r['c']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
-            'author': {'name': r['u']['username']},
+            'author': {'name': r['u']['username'], 'rating': r['u']['rating']},
             'text': r['c']['comment'],
             'id': r['c'].id
         } for r in result]

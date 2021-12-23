@@ -22,7 +22,7 @@
             <path d="M8.20989 0.128235L15.7891 6.69206H0.630644L8.20989 0.128235Z" fill="#5C5252"/> <!--#8CAF00-->
           </svg>
         </div>
-        <div class="vote-text">{{q['votes']}}</div>
+        <div class="vote-text">{{q['rating']}}</div>
         <div class="{{'vote-down' + (' vote-selected' if q['current_vote'] == -1 else '')}}">
           <svg width="16" height="8" viewBox="0 0 16 8" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M8.20991 7.20667L0.630655 0.642842L15.7892 0.642842L8.20991 7.20667Z" fill="#5C5252"/>
@@ -32,6 +32,7 @@
       <div class="username">{{q['author']['name']}}</div>
       <div class="profile-picture">
         <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
+        <p class="user-rating">{{q['author']['rating']}}</p>
       </div>
     </div>
   </div>

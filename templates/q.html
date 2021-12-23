@@ -21,7 +21,7 @@
             <path d="M8.20989 0.128235L15.7891 6.69206H0.630644L8.20989 0.128235Z" fill="#5C5252"/> <!--#8CAF00-->
           </svg>
         </div>
-        <div class="vote-text">{{data['question']['votes']}}</div>
+        <div class="vote-text">{{data['question']['rating']}}</div>
         <div class="{{'vote-down' + (' vote-selected' if data['question']['current_vote'] == -1 else '')}}">
           <svg width="16" height="8" viewBox="0 0 16 8" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M8.20991 7.20667L0.630655 0.642842L15.7892 0.642842L8.20991 7.20667Z" fill="#5C5252"/>
@@ -31,6 +31,7 @@
       <div class="username">{{data['question']['author']['name']}}</div>
       <div class="profile-picture">
         <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
+        <p class="user-rating">{{data['question']['author']['rating']}}</p>
       </div>
     </div>
   </div>
@@ -48,6 +49,7 @@
       <div class="comment">
         <div class="profile-picture">
           <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
+          <p class="user-rating">{{comment['author']['rating']}}</p>
         </div>
         <div class="comment-body">
           <p>{{comment['text']}}</p>
@@ -62,6 +64,7 @@
     <div class="comment-send-form">
       <div class="profile-picture">
         <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
+        <p class="user-rating">{{data['me']['rating']}}</p>
       </div>
       <textarea class="comment-text"></textarea>
     </div>
@@ -86,7 +89,7 @@
             <path d="M8.20989 0.128235L15.7891 6.69206H0.630644L8.20989 0.128235Z" fill="#5C5252"/> <!--#8CAF00-->
           </svg>
         </div>
-        <div class="vote-text">{{answer['votes']}}</div>
+        <div class="vote-text">{{answer['rating']}}</div>
         <div class="{{'vote-down' + (' vote-selected' if answer['current_vote'] == -1 else '')}}">
           <svg width="16" height="8" viewBox="0 0 16 8" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M8.20991 7.20667L0.630655 0.642842L15.7892 0.642842L8.20991 7.20667Z" fill="#5C5252"/>
@@ -96,6 +99,7 @@
       <div class="username">{{answer['author']['name']}}</div>
       <div class="profile-picture">
         <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
+        <p class="user-rating">{{answer['author']['rating']}}</p>
       </div>
     </div>
   </div>
@@ -108,6 +112,7 @@
       <div class="comment">
         <div class="profile-picture">
           <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
+          <p class="user-rating">{{comment['author']['rating']}}</p>
         </div>
         <div class="comment-body">
           <p>{{comment['text']}}</p>
@@ -122,6 +127,7 @@
     <div class="comment-send-form">
       <div class="profile-picture">
         <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
+        <p class="user-rating">{{data['me']['rating']}}</p>
       </div>
       <textarea class="comment-text"></textarea>
     </div>

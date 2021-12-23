@@ -19,6 +19,7 @@
       <div class="username">{{q['author']['name']}}</div>
       <div class="profile-picture">
         <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
+        <p class="user-rating">{{q['author']['rating']}}</p>
       </div>
     </div>
   </div>
@@ -43,6 +44,7 @@
       <div class="username">{{answer['author']['name']}}</div>
       <div class="profile-picture">
         <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
+        <p class="user-rating">{{answer['author']['rating']}}</p>
       </div>
     </div>
   </div>
