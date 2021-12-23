@@ -283,7 +283,6 @@ def q(id):
         if result is None:
             abort(404)
 
-        #словарь где Q - переменная с узлом, а title - поле/свойство во узла
         data = {
             'question' : {
                 'id': id,
@@ -315,12 +314,12 @@ def q(id):
             answer = {
                 'id': r['A'].id,
                 'text': r['A']['answer'],
-                'date': r['A']['date'],
+                'date': r['A']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
                 'author': {'name': r['U']['username']},
                 'votes': r['A']['votes'],
                 'current_vote': r['v']['vote'] if r['v'] is not None else 0,
                 'comments': [{
-                    'date': comment[0],
+                    'date': comment[0].to_native().strftime('%d.%m.%Y %H:%M'),
                     'text': comment[2],
                     'author': {'name': comment[1]}
                 } for comment in sorted(r['comments'])]
