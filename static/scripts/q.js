@@ -70,4 +70,20 @@ $(document).ready(function() {
     $('.vote-down').click(function() {
         updateVotes($(this).parent(), -1)
     });
+
+    $('.report-icon').click(function() {
+        if ($(this).attr('q_id') !== undefined) {
+            $.post('/report', {
+                'q_id': $(this).attr('q_id'),
+            })
+        } else if ($(this).attr('a_id') !== undefined) {
+            $.post('/report', {
+                'a_id': $(this).attr('a_id')
+            })
+        } else if ($(this).attr('c_id') !== undefined) {
+            $.post('/report', {
+                'c_id': $(this).attr('c_id')
+            })
+        }
+    })
 })

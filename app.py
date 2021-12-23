@@ -304,11 +304,12 @@ def q(id):
         for r in result:
             data['question']['comments'].append({
                 'text': r['C']['comment'],
+                'id': r['C'].id,
                 'author': {'name': r['U']['username']}
             })
 
         result = db.run(
-        r'MATCH (Q:Question {id: $id})<-[:TO]-(A:Answer)<-[:ANSWERED]-(U:User) OPTIONAL MATCH (:User {username:$username})-[v:VOTED]->(A) return A,U,[(CU:User)-[:COMMENTED]->(C:Comment)-[:TO]->(A) | [C.date, CU.username, C.comment]] AS comments,v',id=id, username=username
+        r'MATCH (Q:Question {id: $id})<-[:TO]-(A:Answer)<-[:ANSWERED]-(U:User) OPTIONAL MATCH (:User {username:$username})-[v:VOTED]->(A) return A,U,[(CU:User)-[:COMMENTED]->(C:Comment)-[:TO]->(A) | [C.date, CU.username, C.comment, id(C)]] AS comments,v',id=id, username=username
         )
         for r in result:
             answer = {
@@ -320,8 +321,9 @@ def q(id):
                 'current_vote': r['v']['vote'] if r['v'] is not None else 0,
                 'comments': [{
                     'date': comment[0].to_native().strftime('%d.%m.%Y %H:%M'),
+                    'author': {'name': comment[1]},
                     'text': comment[2],
-                    'author': {'name': comment[1]}
+                    'id': comment[3]
                 } for comment in sorted(r['comments'])]
             }
             data['answers'].append(answer)
@@ -397,6 +399,95 @@ def votes():
         if logged_in:
             db.write_transaction(trans_func, request.form, session['username'])
     return ''
+
+@app.route("/report",methods=['POST'])
+def report():
+    logged_in = 'username' in session
+    if not logged_in: return ''
+    username = session['username']
+
+    with get_db().session() as db:
+        if 'q_id' in request.form:
+            q_id = request.form['q_id']
+            db.run(
+                r'MATCH (U:User {username:$username}), (Q:Question {id:$id}) MERGE (U)-[r:REPORTED]->(Q)',
+                username = username, id=q_id
+            )
+        elif 'a_id' in request.form:
+            a_id = request.form['a_id']
+            db.run(
+                r'MATCH (U:User {username:$username}), (A:Answer) WHERE id(A) = $id MERGE (U)-[r:REPORTED]->(A)',
+                username = username, id=int(a_id)
+            )
+        elif 'c_id' in request.form:
+            c_id = request.form['c_id']
+            db.run(
+                r'MATCH (U:User {username:$username}), (C:Comment) WHERE id(C) = $id MERGE (U)-[r:REPORTED]->(C)',
+                username = username, id=int(c_id)
+            )
+    return ''
+
+def is_moderator(username):
+    with get_db().session() as db:
+        result = db.run(r'MATCH (u:User:Moderator {username:$username}) RETURN u', username=username).single()
+        return result is not None
+
+@app.route("/reported")
+def reported():
+    logged_in = 'username' in session
+    if not logged_in: return redirect(url_for('main'))
+    username = session['username']
+    if not is_moderator(username): return redirect(url_for('main'))
+
+    with get_db().session() as db:
+        questions = []
+        result = db.run(r'''
+            MATCH (:User)-[:REPORTED]->(q:Question)
+            WITH DISTINCT q
+            MATCH (d:Discipline)<-[:CORRESPONDS]-(q)<-[:ASKED]-(a:User)
+            RETURN d, a, q''')
+        questions = [{
+            'id': r['q']['id'],
+            'title': r['q']['title'],
+            'text': r['q']['question'],
+            'date': r['q']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
+            'votes': r['q']['votes'],
+            'author': {'name': r['a']['username']},
+            'discipline': r['d']['name']
+        } for r in result]
+
+        result = db.run(r'''
+            MATCH (:User)-[:REPORTED]->(a:Answer)
+            WITH DISTINCT a
+            MATCH (a)<-[:ANSWERED]-(u:User)
+            RETURN u, a''')
+        answers = [{
+            'id': r['a'].id,
+            'text': r['a']['answer'],
+            'date': r['a']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
+            'author': {'name': r['u']['username']},
+            'votes': r['a']['votes']
+        } for r in result]
+        
+        result = db.run(r'''
+            MATCH (:User)-[:REPORTED]->(c:Comment)
+            WITH DISTINCT c
+            MATCH (c)<-[:COMMENTED]-(u:User)
+            RETURN u, c''')
+        comments = [{
+            'date': r['c']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
+            'author': {'name': r['u']['username']},
+            'text': r['c']['comment'],
+            'id': r['c'].id
+        } for r in result]
+        
+
+        data = {
+            'questions': questions,
+            'answers': answers,
+            'comments': comments
+        }
+    return render_template('reported.html', data=data)
 
 @app.route("/search")
 def search():
