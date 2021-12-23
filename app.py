@@ -51,10 +51,10 @@ def close_connection(exception):
 @app.route("/")
 def main():
     logged_in = 'username' in session
+    username = session.get('username')
     with get_db().session() as db:
         questions = []
         if logged_in:
-            username = session['username']
             result = db.run(r'''
                 MATCH (u:User {username:$username})
                 MATCH (u)-[v:VIEWED]->(qv:Question)
@@ -92,7 +92,7 @@ def main():
         data = {
             'questions': questions
         }
-    return render_template('feed.html', data=data, logged_in=logged_in)
+    return render_template('feed.html', data=data, logged_in=logged_in, my_name=username)
 
 @app.route("/users")
 def users():
@@ -237,7 +237,7 @@ def question():
             if r['s']['name'] not in data:
                 data[r['s']['name']] = []
             data[r['s']['name']].append(r['d']['name'])
-    return render_template('question.html', data=data, error=error)
+    return render_template('question.html', data=data, error=error, logged_in=True, my_name=username)
 
 
 @app.route("/q/<id>",methods=['POST', 'GET'])
@@ -339,7 +339,7 @@ def q(id):
                 id=id, username=username
             )
 
-        return render_template('q.html', data=data, logged_in=logged_in)
+        return render_template('q.html', data=data, logged_in=logged_in, my_name=username)
         # return f'''<h1>{title}</h1>'''    
 # HTML-собрать и на странице поста указать автора поста
 
@@ -501,7 +501,7 @@ def reported():
             'answers': answers,
             'comments': comments
         }
-    return render_template('reported.html', data=data)
+    return render_template('reported.html', data=data, logged_in=True, my_name=username)
 
 @app.route("/search")
 def search():

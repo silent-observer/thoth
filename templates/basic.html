@@ -8,17 +8,26 @@
   <title>Thoth</title>
   <link rel="stylesheet" href="{{url_for('static', filename='styles/basic.css')}}">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="{{url_for('static', filename='scripts/basic.js')}}"></script>
 {%endblock%}
 </head>
 <body>
   <header>
     <div id="header-container">
-      <h1 id="header-logo">THOTH</h1>
+      <h1 id="header-logo" title="Главная страница">THOTH</h1>
       <div id="search-bar">
         <img id="search-icon" src="{{url_for('static', filename='resources/search_icon.png')}}">
         <input id="search-input">
       </div>
-      <img id="login-icon" src="{{url_for('static', filename='resources/login_icon.png')}}">
+      {% if logged_in %}
+      <div id="my-profile">
+        <p id="my-username">{{my_name}}</p>
+        <img id="logout-icon" src="{{url_for('static', filename='resources/register_icon.png')}}" title="Выйти">
+      </div>
+      {% else %}
+      <img id="login-icon" src="{{url_for('static', filename='resources/login_icon.png')}}" title="Войти">
+      <img id="register-icon" src="{{url_for('static', filename='resources/register_icon.png')}}" title="Зарегистрироваться">
+      {% endif %}
     </div>
   </header>
   <div id="wrapper">
