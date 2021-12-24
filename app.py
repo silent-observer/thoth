@@ -224,8 +224,8 @@ def question():
     if 'username' not in session:
         return redirect(url_for('login'))
     
-
     error = None
+    username = None
     if request.method == 'POST':
         title = request.form['title']
         question = request.form['question']
