@@ -244,4 +244,5 @@ textarea {
   height: 14.68px;
   margin: 5px;
   float: right;
+  cursor: pointer;
 }

@@ -8,6 +8,7 @@ import bcrypt, base64
 from werkzeug.utils import redirect
 import random, atexit
 from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import timedelta
 
 neo4j_pass = os.environ.get('NEO4J_PASS')
 neo4j_uri = 'neo4j+s://1f59f68c.databases.neo4j.io'
@@ -26,8 +27,21 @@ def update_recommendations():
             ''')
             print('Updated recommendations!')
 
+def delete_expired_data():
+    with GraphDatabase.driver(neo4j_uri, auth=('neo4j', neo4j_pass)) as local_db:
+        with local_db.session() as db:
+            result = db.run(r'''
+                MATCH (n)<-[r:HIDDEN]-(u:User:Moderator)
+                WHERE r.date < datetime()
+                MATCH (n)<-[:TO*0..]-(x)
+                DETACH DELETE x
+                RETURN count(x) as c
+            ''').single()
+            print(f'Deleted {result["c"]} objects!')
+
 sched = BackgroundScheduler(daemon=True)
 sched.add_job(update_recommendations, 'interval', minutes=60)
+sched.add_job(delete_expired_data, 'interval', days=1)
 sched.start()
 
 atexit.register(lambda: sched.shutdown(wait=False))
@@ -541,3 +555,32 @@ def search():
             text += '<ul>' + ''.join(result_texts) + '</ul>'
         return form_text + text
 
+@app.route("/hide",methods=['POST'])
+def hide():
+    logged_in = 'username' in session
+    if not logged_in: return ''
+    username = session['username']
+    if not is_moderator(username): return ''
+
+    date = DateTime.now() + timedelta(days=30)
+
+    with get_db().session() as db:
+        if 'q_id' in request.form:
+            q_id = request.form['q_id']
+            db.run(
+                r'MATCH (U:User:Moderator {username:$username}), (Q:Question {id:$id}) MERGE (U)-[r:HIDDEN]->(Q) SET r.deletion_date=$date',
+                username = username, id=q_id, date=date
+            )
+        elif 'a_id' in request.form:
+            a_id = request.form['a_id']
+            db.run(
+                r'MATCH (U:User:Moderator {username:$username}), (A:Answer) WHERE id(A) = $id MERGE (U)-[r:HIDDEN]->(A) SET r.deletion_date=$date',
+                username = username, id=int(a_id), date=date
+            )
+        elif 'c_id' in request.form:
+            c_id = request.form['c_id']
+            db.run(
+                r'MATCH (U:User:Moderator {username:$username}), (C:Comment) WHERE id(C) = $id MERGE (U)-[r:HIDDEN]->(C) SET r.deletion_date=$date',
+                username = username, id=int(c_id), date=date
+            )
+    return ''

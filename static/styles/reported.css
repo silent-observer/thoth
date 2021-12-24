@@ -239,9 +239,10 @@ textarea {
   margin-bottom: 17px;
 }
 
-.report-icon {
+.hide-icon {
   width: 14.4px;
   height: 14.68px;
   margin: 5px;
   float: right;
+  cursor: pointer;
 }
