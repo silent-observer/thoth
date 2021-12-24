@@ -599,19 +599,39 @@ def hide():
         if 'q_id' in request.form:
             q_id = request.form['q_id']
             db.run(
-                r'MATCH (U:User:Moderator {username:$username}), (Q:Question {id:$id}) MERGE (U)-[r:HIDDEN]->(Q) SET r.deletion_date=$date',
+                r'''
+                MATCH (U:User:Moderator {username:$username}), (Q:Question {id:$id}) 
+                MERGE (U)-[r:HIDDEN]->(Q)
+                SET r.deletion_date=$date
+                
+                OPTIONAL MATCH ()-[rep:REPORTED]->(Q)
+                DELETE rep''',
                 username = username, id=q_id, date=date
             )
         elif 'a_id' in request.form:
             a_id = request.form['a_id']
             db.run(
-                r'MATCH (U:User:Moderator {username:$username}), (A:Answer) WHERE id(A) = $id MERGE (U)-[r:HIDDEN]->(A) SET r.deletion_date=$date',
+                r'''
+                MATCH (U:User:Moderator {username:$username}), (A:Answer) 
+                WHERE id(A) = $id 
+                MERGE (U)-[r:HIDDEN]->(A) 
+                SET r.deletion_date=$date
+                
+                OPTIONAL MATCH ()-[rep:REPORTED]->(A)
+                DELETE rep''',
                 username = username, id=int(a_id), date=date
             )
         elif 'c_id' in request.form:
             c_id = request.form['c_id']
             db.run(
-                r'MATCH (U:User:Moderator {username:$username}), (C:Comment) WHERE id(C) = $id MERGE (U)-[r:HIDDEN]->(C) SET r.deletion_date=$date',
+                r'''
+                MATCH (U:User:Moderator {username:$username}), (C:Comment) 
+                WHERE id(C) = $id 
+                MERGE (U)-[r:HIDDEN]->(C) 
+                SET r.deletion_date=$date
+                
+                OPTIONAL MATCH ()-[rep:REPORTED]->(C)
+                DELETE rep''',
                 username = username, id=int(c_id), date=date
             )
     return ''
