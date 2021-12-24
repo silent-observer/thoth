@@ -1,0 +1,72 @@
+{%extends "basic.html"%}
+{%block head%}
+  {{super()}}
+  <link rel="stylesheet" href="{{url_for('static', filename='styles/hidden.css')}}">
+  <script src="{{url_for('static', filename='scripts/hidden.js')}}"></script>
+{%endblock%}
+
+{%block content%}
+{%for q in data['questions']%}
+<section class="question">
+  <div class="question-header">
+    <div class="qheader-date">
+      <span class="date">{{q['date']}}</span>
+      <div class="tags-container">
+        <span class="tag">{{q['discipline']}}</span>
+      </div>
+    </div>
+    <div class="qheader-user">
+      <div class="username">{{q['author']['name']}}</div>
+      <div class="profile-picture">
+        <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
+        <p class="user-rating">{{q['author']['rating']}}</p>
+      </div>
+    </div>
+  </div>
+  <div class="question-main">
+    <div class="question-body">
+      <div class="question-title">
+        <a href="{{url_for('q', id=q['id'])}}">{{q['title']}}</a>
+        <img class="unhide-icon" q_id="{{q['id']}}" src="{{url_for('static', filename='resources/search_icon.png')}}">
+      </div>
+      <p>{{q['text']}}</p>
+    </div>
+  </div>
+</section>
+{%endfor%}
+
+{%for answer in data['answers']%}
+<section class="answer">
+  <div class="answer-header">
+    <div class="aheader-date">
+      <span class="date">{{answer['date']}}</span>
+      <img class="unhide-icon" a_id="{{answer['id']}}" src="{{url_for('static', filename='resources/search_icon.png')}}">
+    </div>
+    <div class="aheader-user">
+      <div class="username">{{answer['author']['name']}}</div>
+      <div class="profile-picture">
+        <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
+        <p class="user-rating">{{answer['author']['rating']}}</p>
+      </div>
+    </div>
+  </div>
+  <div class="answer-main">
+    <div class="answer-body">
+      <p>{{answer['text']}}</p>
+    </div>
+  </div>
+</section>
+{%endfor%}
+
+{%for comment in data['comments']%}
+<div class="comment">
+  <div class="profile-picture">
+    <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
+  </div>
+  <div class="comment-body">
+    <p>{{comment['text']}}</p>
+    <img c_id="{{comment['id']}}" class="unhide-icon" src="{{url_for('static', filename='resources/search_icon.png')}}">
+  </div>
+</div>
+{%endfor%}
+{%endblock%}

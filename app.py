@@ -600,11 +600,10 @@ def hide():
             q_id = request.form['q_id']
             db.run(
                 r'''
-                MATCH (U:User:Moderator {username:$username}), (Q:Question {id:$id}) 
+                MATCH (U:User:Moderator {username:$username}), (Q:Question {id:$id})
+                OPTIONAL MATCH ()-[rep:REPORTED]->(Q)
                 MERGE (U)-[r:HIDDEN]->(Q)
                 SET r.deletion_date=$date
-                
-                OPTIONAL MATCH ()-[rep:REPORTED]->(Q)
                 DELETE rep''',
                 username = username, id=q_id, date=date
             )
@@ -613,11 +612,10 @@ def hide():
             db.run(
                 r'''
                 MATCH (U:User:Moderator {username:$username}), (A:Answer) 
-                WHERE id(A) = $id 
+                WHERE id(A) = $id
+                OPTIONAL MATCH ()-[rep:REPORTED]->(A)
                 MERGE (U)-[r:HIDDEN]->(A) 
                 SET r.deletion_date=$date
-                
-                OPTIONAL MATCH ()-[rep:REPORTED]->(A)
                 DELETE rep''',
                 username = username, id=int(a_id), date=date
             )
@@ -626,12 +624,96 @@ def hide():
             db.run(
                 r'''
                 MATCH (U:User:Moderator {username:$username}), (C:Comment) 
-                WHERE id(C) = $id 
-                MERGE (U)-[r:HIDDEN]->(C) 
-                SET r.deletion_date=$date
-                
+                WHERE id(C) = $id
                 OPTIONAL MATCH ()-[rep:REPORTED]->(C)
+                MERGE (U)-[r:HIDDEN]->(C)
+                SET r.deletion_date=$date
                 DELETE rep''',
                 username = username, id=int(c_id), date=date
+            )
+    return ''
+
+@app.route("/hidden")
+def hidden():
+    logged_in = 'username' in session
+    if not logged_in: return redirect(url_for('main'))
+    username = session['username']
+    if not is_moderator(username): return redirect(url_for('main'))
+
+    with get_db().session() as db:
+        questions = []
+        result = db.run(r'''
+            MATCH (:User)-[:HIDDEN]->(q:Question)
+            MATCH (d:Discipline)<-[:CORRESPONDS]-(q)<-[:ASKED]-(a:User)
+            RETURN d, a, q''')
+        questions = [{
+            'id': r['q']['id'],
+            'title': r['q']['title'],
+            'text': r['q']['question'],
+            'date': r['q']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
+            'rating': r['q']['rating'],
+            'author': {'name': r['a']['username'], 'rating': r['a']['rating']},
+            'discipline': r['d']['name']
+        } for r in result]
+
+        result = db.run(r'''
+            MATCH (:User)-[:HIDDEN]->(a:Answer)
+            MATCH (a)<-[:ANSWERED]-(u:User)
+            RETURN u, a''')
+        answers = [{
+            'id': r['a'].id,
+            'text': r['a']['answer'],
+            'date': r['a']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
+            'author': {'name': r['u']['username'], 'rating': r['u']['rating']},
+            'rating': r['a']['rating']
+        } for r in result]
+        
+        result = db.run(r'''
+            MATCH (:User)-[:HIDDEN]->(c:Comment)
+            MATCH (c)<-[:COMMENTED]-(u:User)
+            RETURN u, c''')
+        comments = [{
+            'date': r['c']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
+            'author': {'name': r['u']['username'], 'rating': r['u']['rating']},
+            'text': r['c']['comment'],
+            'id': r['c'].id
+        } for r in result]
+        
+
+        data = {
+            'questions': questions,
+            'answers': answers,
+            'comments': comments
+        }
+    return render_template('hidden.html', data=data, logged_in=True, my_name=username)
+
+@app.route("/unhide",methods=['POST'])
+def unhide():
+    logged_in = 'username' in session
+    if not logged_in: return ''
+    username = session['username']
+    if not is_moderator(username): return ''
+
+    with get_db().session() as db:
+        if 'q_id' in request.form:
+            q_id = request.form['q_id']
+            db.run(
+                r'MATCH (U:User:Moderator)-[r:HIDDEN]->(Q:Question {id:$id}) DELETE r', id=q_id
+            )
+        elif 'a_id' in request.form:
+            a_id = request.form['a_id']
+            db.run(
+                r'''
+                MATCH (U:User:Moderator)-[r:HIDDEN]->(A:Answer) 
+                WHERE id(A) = $id
+                DELETE r''', id=int(a_id)
+            )
+        elif 'c_id' in request.form:
+            c_id = request.form['c_id']
+            db.run(
+                r'''
+                MATCH (U:User:Moderator)-[r:HIDDEN]->(C:Comment) 
+                WHERE id(C) = $id
+                DELETE r''', id=int(c_id)
             )
     return ''
