@@ -74,6 +74,7 @@ def main():
                 MATCH (u)-[v:VIEWED]->(qv:Question)
                 MATCH (qv)-[s:SIMILAR]-(qs:Question)
                 WHERE NOT (u)-[:VIEWED]->(qs)
+                WHERE NOT ()-[:HIDDEN]->(qs)
                 WITH u, qs, sum(s.jaccard) as j
                 MATCH (a:User)-[:ASKED]->(qs)-[:CORRESPONDS]->(d:Discipline)
                 OPTIONAL MATCH (u)-[voted:VOTED]->(qs)
@@ -84,6 +85,7 @@ def main():
         else:
             result = db.run(r'''
                 MATCH (qs:Question)
+                WHERE NOT ()-[:HIDDEN]->(qs)
                 WITH qs, duration.inSeconds(datetime(), qs.date).seconds as secondsPast
                 WITH qs, qs.views + qs.rating * 2 - secondsPast + 50.0 / (1.0 + 0.00001 * secondsPast) as j
                 MATCH (a:User)-[:ASKED]->(qs)-[:CORRESPONDS]->(d:Discipline)
@@ -309,6 +311,7 @@ def q(id):
         result = db.run(
         r'''
             MATCH (D:Discipline)<-[:CORRESPONDS]-(Q:Question {id: $id})<-[r:ASKED]-(U:User)
+            WHERE NOT ()-[:HIDDEN]->(Q)
             OPTIONAL MATCH (u:User {username:$username})
             OPTIONAL MATCH (u)-[v:VOTED]->(Q)
             RETURN Q,U,D,v,u.rating as R''',id=id, username=username
@@ -333,7 +336,11 @@ def q(id):
         }
 
         result = db.run(
-        r'MATCH (Q:Question {id: $id})<-[:TO]-(C:Comment)<-[:COMMENTED]-(U:User) return C,U ORDER BY C.date',id=id
+        r'''
+        MATCH (Q:Question {id: $id})<-[:TO]-(C:Comment)<-[:COMMENTED]-(U:User)
+        WHERE NOT ()-[:HIDDEN]->(C)
+        RETURN C,U
+        ORDER BY C.date''',id=id
         )
         for r in result:
             data['question']['comments'].append({
@@ -343,7 +350,13 @@ def q(id):
             })
 
         result = db.run(
-        r'MATCH (Q:Question {id: $id})<-[:TO]-(A:Answer)<-[:ANSWERED]-(U:User) OPTIONAL MATCH (:User {username:$username})-[v:VOTED]->(A) return A,U,[(CU:User)-[:COMMENTED]->(C:Comment)-[:TO]->(A) | [C.date, CU.username, C.comment, id(C), CU.rating]] AS comments,v',id=id, username=username
+        r'''
+        MATCH (Q:Question {id: $id})<-[:TO]-(A:Answer)<-[:ANSWERED]-(U:User)
+        WHERE NOT ()-[:HIDDEN]->(A)
+        OPTIONAL MATCH (:User {username:$username})-[v:VOTED]->(A) 
+        RETURN A,U,[
+            (CU:User)-[:COMMENTED]->(C:Comment)-[:TO]->(A) WHERE NOT ()-[:HIDDEN]->(C) | [C.date, CU.username, C.comment, id(C), CU.rating]] 
+            AS comments,v''',id=id, username=username
         )
         for r in result:
             answer = {
@@ -551,7 +564,7 @@ def search():
 
     with get_db().session() as db:
         result = db.run(
-            'CALL db.index.fulltext.queryNodes("titlesAndTexts", $text) YIELD node, score RETURN node, score LIMIT 50', text=search_text
+            'CALL db.index.fulltext.queryNodes("titlesAndTexts", $text) YIELD node, score WHERE NOT ()-[:HIDDEN]->(node) RETURN node, score LIMIT 50', text=search_text
         )
 
         result_texts = []
