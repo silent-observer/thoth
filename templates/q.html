@@ -39,7 +39,7 @@
     <div class="question-body">
       <div class="question-title">{{data['question']['title']}}
       {% if logged_in %}
-      <img class="report-icon" q_id="{{data['question']['id']}}" src="{{url_for('static', filename='resources/search_icon.png')}}">
+      <img class="report-icon" q_id="{{data['question']['id']}}" src="{{url_for('static', filename='resources/report_icon.png')}}">
       {% endif %}
       </div>
       <p>{{data['question']['text']}}</p>
@@ -54,7 +54,7 @@
         <div class="comment-body">
           <p>{{comment['text']}}</p>
           {% if logged_in %}
-          <img c_id="{{comment['id']}}" class="report-icon" src="{{url_for('static', filename='resources/search_icon.png')}}">
+          <img c_id="{{comment['id']}}" class="report-icon" src="{{url_for('static', filename='resources/report_icon.png')}}">
           {% endif %}
         </div>
       </div>
@@ -79,7 +79,7 @@
     <div class="aheader-date">
       <span class="date">{{answer['date']}}</span>
       {% if logged_in %}
-      <img class="report-icon" a_id="{{answer['id']}}" src="{{url_for('static', filename='resources/search_icon.png')}}">
+      <img class="report-icon" a_id="{{answer['id']}}" src="{{url_for('static', filename='resources/report_icon.png')}}">
       {% endif %}
     </div>
     <div class="aheader-user">
@@ -117,7 +117,7 @@
         <div class="comment-body">
           <p>{{comment['text']}}</p>
           {% if logged_in %}
-          <img c_id="{{comment['id']}}" class="report-icon" src="{{url_for('static', filename='resources/search_icon.png')}}">
+          <img c_id="{{comment['id']}}" class="report-icon" src="{{url_for('static', filename='resources/report_icon.png')}}">
           {% endif %}
         </div>
       </div>

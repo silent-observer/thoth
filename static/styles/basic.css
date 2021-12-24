@@ -93,7 +93,7 @@ input:focus {
 
   position: absolute;
   left: 100%;
-  margin-left: 20px;
+  margin-left: 10px;
   cursor: pointer;
 }
 
@@ -103,7 +103,7 @@ input:focus {
 
   position: absolute;
   left: 100%;
-  margin-left: 80px;
+  margin-left: 90px;
   cursor: pointer;
 }
 
@@ -121,7 +121,7 @@ input:focus {
   width: 53px;
   height: 53px;
   cursor: pointer;
-  margin-left: 20px;
+  margin-left: 10px;
 }
 
 #header-container {

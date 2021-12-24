@@ -27,7 +27,7 @@
     <div class="question-body">
       <div class="question-title">
         <a href="{{url_for('q', id=q['id'])}}">{{q['title']}}</a>
-        <img class="hide-icon" q_id="{{q['id']}}" src="{{url_for('static', filename='resources/search_icon.png')}}">
+        <img class="hide-icon" q_id="{{q['id']}}" src="{{url_for('static', filename='resources/hide_icon.png')}}">
       </div>
       <p>{{q['text']}}</p>
     </div>
@@ -40,7 +40,7 @@
   <div class="answer-header">
     <div class="aheader-date">
       <span class="date">{{answer['date']}}</span>
-      <img class="hide-icon" a_id="{{answer['id']}}" src="{{url_for('static', filename='resources/search_icon.png')}}">
+      <img class="hide-icon" a_id="{{answer['id']}}" src="{{url_for('static', filename='resources/hide_icon.png')}}">
     </div>
     <div class="aheader-user">
       <div class="username">{{answer['author']['name']}}</div>
@@ -65,7 +65,7 @@
   </div>
   <div class="comment-body">
     <p>{{comment['text']}}</p>
-    <img c_id="{{comment['id']}}" class="hide-icon" src="{{url_for('static', filename='resources/search_icon.png')}}">
+    <img c_id="{{comment['id']}}" class="hide-icon" src="{{url_for('static', filename='resources/hide_icon.png')}}">
   </div>
 </div>
 {%endfor%}
