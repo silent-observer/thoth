@@ -73,8 +73,7 @@ def main():
                 MATCH (u:User {username:$username})
                 MATCH (u)-[v:VIEWED]->(qv:Question)
                 MATCH (qv)-[s:SIMILAR]-(qs:Question)
-                WHERE NOT (u)-[:VIEWED]->(qs)
-                WHERE NOT ()-[:HIDDEN]->(qs)
+                WHERE NOT (u)-[:VIEWED]->(qs) AND NOT ()-[:HIDDEN]->(qs)
                 WITH u, qs, sum(s.jaccard) as j
                 MATCH (a:User)-[:ASKED]->(qs)-[:CORRESPONDS]->(d:Discipline)
                 OPTIONAL MATCH (u)-[voted:VOTED]->(qs)

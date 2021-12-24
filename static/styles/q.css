@@ -134,7 +134,7 @@
   background: rgba(92, 82, 82, 0.3);
   border: 0.85px solid #8CAF00;
   box-sizing: border-box;
-  border-radius: 6.49324px;
+  border-radius: 6.49324px 6.49324px 0 0;
   padding: 6px 24px;
   margin: -0.8px;
 }
