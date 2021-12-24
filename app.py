@@ -117,12 +117,29 @@ def users():
             names.append(r['n']['username'])
     return "<p>Users:<br>" + '<br>'.join(names) + "</p>"
 
+cyrillic_letters = 'АаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя'
 
 allowed_username_characters = set(
     string.ascii_letters + string.digits + '.-_'
 )
-def is_valid(username):
-    return set(username) <= allowed_username_characters
+allowed_password_characters = set(
+    string.ascii_letters + cyrillic_letters + string.digits + '!@#$;%^:&?*()_-+=\'"'
+)
+
+def is_username_valid(username):
+    return (len(username) >= 4 and len(username) <= 20 and
+        set(username) <= allowed_username_characters)
+def is_password_valid(password):
+    return (len(password) >= 5 and len(password) <= 50 and
+        set(password) <= allowed_password_characters)
+def is_question_text_valid(text):
+    return len(text) >= 10 and len(text) <= 2000
+def is_question_title_valid(text):
+    return len(text) >= 10 and len(text) <= 100
+def is_answer_text_valid(text):
+    return len(text) >= 10 and len(text) <= 2000
+def is_comment_text_valid(text):
+    return len(text) >= 10 and len(text) <= 280
 
 @app.route("/register", methods=['POST', 'GET'])
 def register():
@@ -139,8 +156,10 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        if not is_valid(username):
-            return '<p>Username can only contain Latin letters, digits and ".", "-", "_" symbols.</p>' + form_text
+        if not is_username_valid(username):
+            return '<p>Логин пользователя может содержать только латинские буквы, цифры и символы ".", "-", "_", в количестве от 4 до 20.</p>' + form_text
+        if not is_password_valid(password):
+            return '<p>Пароль может содержать только латинские и кириллические буквы, цифры и символы из списка "!@#$;%^:&?*()_-+=\'"", в количестве от 5 до 50.</p>' + form_text
         
         with get_db().session() as db:
             result = db.run(
@@ -148,7 +167,7 @@ def register():
                 username=username
                 ).single()
             if result is not None:
-                return '<p>Username already used, please pick another one</p>' + form_text
+                return '<p>Этот логин уже занят, пожалуйста, выберите другой</p>' + form_text
             pass_hash = base64.b64encode(bcrypt.hashpw(
                 password.encode('utf-8'), bcrypt.gensalt()
                 )).decode('ascii')
@@ -182,8 +201,10 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        if not is_valid(username):
-            return '<p>Username can only contain Latin letters, digits and ".", "-", "_" symbols.</p>' + form_text
+        if not is_username_valid(username):
+            return '<p>Логин пользователя может содержать только латинские буквы, цифры и символы ".", "-", "_", в количестве от 4 до 20.</p>' + form_text
+        if not is_password_valid(password):
+            return '<p>Пароль может содержать только латинские и кириллические буквы, цифры и символы из списка "!@#$;%^:&?*()_-+=\'"", в количестве от 5 до 50.</p>' + form_text
         
         with get_db().session() as db:
             result = db.run(
@@ -220,9 +241,9 @@ def question():
         discipline = request.form['discipline']
         date = DateTime.now()
 
-        if len(title) < 10 or len(title) > 100:
+        if not is_question_title_valid(title):
             error = "Заголовок должен содержать не менее 10 и не более 100 символов."
-        if len(question) < 10 or len(question) > 2000:
+        if not is_question_text_valid(question):
             error = "Текст вопроса должен содержать не менее 10 и не более 2000 символов."
         if discipline is None or discipline == "":
             error = "Выберите предмет и дисциплину."
@@ -258,6 +279,9 @@ def question():
 def q(id):
     with get_db().session() as db:
         logged_in = 'username' in session
+
+        errors = []
+
         if request.method == 'POST':
             if not logged_in:
                 return redirect(url_for('q', id=id))
@@ -267,24 +291,27 @@ def q(id):
 
             if 'q_id' in request.form:
                 comment = request.form['comment']
-                db.run(
-                    r'MATCH (U:User {username:$username}), (Q:Question {id:$id}) CREATE (Q)<-[:TO]-(C:Comment {comment:$comment, date:$date}) <-[:COMMENTED]-(U)',
-                    username = username, id=id, comment=comment, date=date
-                )
+                if is_comment_text_valid(comment):
+                    db.run(
+                        r'MATCH (U:User {username:$username}), (Q:Question {id:$id}) CREATE (Q)<-[:TO]-(C:Comment {comment:$comment, date:$date}) <-[:COMMENTED]-(U)',
+                        username = username, id=id, comment=comment, date=date
+                    )
             elif 'a_id' in request.form:
                 comment = request.form['comment']
                 a_id = request.form['a_id']
-                db.run(
-                    r'MATCH (U:User {username:$username}), (A:Answer) WHERE id(A) = $a_id CREATE (A)<-[:TO]-(C:Comment {comment:$comment, date:$date})<-[:COMMENTED]-(U)',
-                    username = username, a_id=int(a_id), comment=comment, date=date
-                )
+                if is_comment_text_valid(comment):
+                    db.run(
+                        r'MATCH (U:User {username:$username}), (A:Answer) WHERE id(A) = $a_id CREATE (A)<-[:TO]-(C:Comment {comment:$comment, date:$date})<-[:COMMENTED]-(U)',
+                        username = username, a_id=int(a_id), comment=comment, date=date
+                    )
             else:
                 answer = request.form['answer']
-                db.run(
-                    r'MATCH (U:User {username:$username}), (Q:Question {id:$id}) CREATE (Q)<-[:TO]-(A:Answer {answer:$answer, date:$date, rating: 0}) <-[:ANSWERED]-(U)',
-                    username = username, id=id, answer=answer, date=date
-                )
-            return redirect(url_for('q', id=id))
+                if is_answer_text_valid(answer):
+                    db.run(
+                        r'MATCH (U:User {username:$username}), (Q:Question {id:$id}) CREATE (Q)<-[:TO]-(A:Answer {answer:$answer, date:$date, rating: 0}) <-[:ANSWERED]-(U)',
+                        username = username, id=id, answer=answer, date=date
+                    )
+            return redirect('q', id=id)
 
         username = session['username'] if 'username' in session else ''
 
@@ -353,7 +380,7 @@ def q(id):
                 id=id, username=username
             )
 
-        return render_template('q.html', data=data, logged_in=logged_in, my_name=username)
+        return render_template('q.html', data=data, logged_in=logged_in, my_name=username, errors=errors)
         # return f'''<h1>{title}</h1>'''    
 # HTML-собрать и на странице поста указать автора поста
 

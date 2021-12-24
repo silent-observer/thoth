@@ -4,6 +4,14 @@ $(document).ready(function() {
         var btn = $(this)
         var text = btn.parent().find('.comment-text').val()
 
+        $('.error').remove()
+        if (text.length < 10 || text.length > 280) {
+            var comments = btn.parent().find('.comments')
+            var errorText = $($.parseHTML('<p class="error">Комментарий должен содержать от 10 до 280 символов</p>'))
+            comments.append(errorText)
+            return
+        }
+
         if (btn.attr('q_id') !== null) {
             $.post(window.location, {
                 'q_id': btn.attr('q_id'),
@@ -26,8 +34,18 @@ $(document).ready(function() {
     });
 
     $('#answer-send-btn').click(function() {
+        var text = $('#send-answer-text').val()
+
+        $('.error').remove()
+        if (text.length < 10 || text.length > 2000) {
+            var sect = $(this).parent()
+            var errorText = $($.parseHTML('<p class="error">Ответ должен содержать от 10 до 2000 символов</p>'))
+            sect.prepend(errorText)
+            return
+        }
+
         $.post(window.location, {
-            'answer': $('#send-answer-text').val()
+            'answer': text
         }, function(){
             location.reload()
         })
