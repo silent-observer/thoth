@@ -108,15 +108,6 @@ def main():
         }
     return render_template('feed.html', data=data, logged_in=logged_in, my_name=username)
 
-@app.route("/users")
-def users():
-    names = []
-    with get_db().session() as db:
-        result = db.run('MATCH (n:User) RETURN n')
-        for r in result:
-            names.append(r['n']['username'])
-    return "<p>Users:<br>" + '<br>'.join(names) + "</p>"
-
 cyrillic_letters = 'АаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя'
 
 allowed_username_characters = set(
