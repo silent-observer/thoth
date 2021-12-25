@@ -175,28 +175,18 @@ def register():
 @app.route("/login", methods=['POST', 'GET'])
 def login():
     if 'username' in session:
-        return f'''
-            <p>Already logged in as "{session["username"]}"".
-            <a href={url_for('logout')}>Logout</a></p>
-            '''
+        return redirect(url_for('main'))
 
-    form_text = '''
-        <p>Login:</p>
-        <form method="post">
-            <label for="username">Username:</label><br>
-            <input type="text" id="username" name="username"><br>
-            <label for="password">Password:</label><br>
-            <input type="password" id="password" name="password"><br>
-            <input type="submit" value="Submit">
-        </form>
-        '''
+    error = None
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         if not is_username_valid(username):
-            return '<p>Логин пользователя может содержать только латинские буквы, цифры и символы ".", "-", "_", в количестве от 4 до 20.</p>' + form_text
+            error = 'Логин пользователя может содержать только латинские буквы, цифры и символы ".", "-", "_", в количестве от 4 до 20.'
+            return render_template('login.html', error=error, logged_in=False)
         if not is_password_valid(password):
-            return '<p>Пароль может содержать только латинские и кириллические буквы, цифры и символы из списка "!@#$;%^:&?*()_-+=\'"", в количестве от 5 до 50.</p>' + form_text
+            error = 'Пароль может содержать только латинские и кириллические буквы, цифры и символы из списка "!@#$;%^:&?*()_-+=\'"", в количестве от 5 до 50.'
+            return render_template('login.html', error=error, logged_in=False)
         
         with get_db().session() as db:
             result = db.run(
@@ -204,15 +194,17 @@ def login():
                 username=username
                 ).single()
             if result is None:
-                return '<p>No user with such username</p>' + form_text
+                error = 'Пользователя с таким логином не существует!'
+                return render_template('login.html', error=error, logged_in=False)
             pass_hash = base64.b64decode(result['n']['pass_hash'])
             if bcrypt.hashpw(password.encode('utf-8'), pass_hash) == pass_hash:
                 session['username'] = username
                 return redirect(url_for('main'))
             else:
-                return '<p>Invalid password!</p>' + form_text
-    else:
-        return form_text
+                error = 'Неверный пароль!'
+                return render_template('login.html', error=error, logged_in=False)
+    
+    return render_template('login.html', error=error, logged_in=False)
 
 @app.route("/logout")
 def logout():
