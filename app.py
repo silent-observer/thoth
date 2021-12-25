@@ -86,9 +86,10 @@ def main():
                     RETURN qs, (qs.views + qs.rating * 2 + 50.0 / (1.0 + 0.00001 * secondsPast)) / 500 as j
                 }
                 WITH DISTINCT qs, j
+                MATCH (a:User)-[:ASKED]->(qs)-[:CORRESPONDS]->(d:Discipline)
                 OPTIONAL MATCH (u)-[viewed:VIEWED]->(qs)
                 OPTIONAL MATCH (u)-[voted:VOTED]->(qs)
-                RETURN qs, CASE
+                RETURN a, qs, d, CASE
                     WHEN viewed IS NULL THEN j * 2
                     ELSE j
                 END as j
