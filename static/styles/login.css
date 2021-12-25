@@ -8,6 +8,7 @@
   color: #8CAF00;
   text-align: center;
   width: 100%;
+  margin-bottom: 50px;
 }
 
 #username, #password {
@@ -32,7 +33,7 @@
   color: #8CAF00;
 
   border: none;
-  margin-bottom: 33px;
+  margin-bottom: 10px;
   margin-top: 10px;
 }
 
@@ -59,6 +60,8 @@
   align-content: center;
   line-height: 25px;
   transition: background-color 0.3s;
+
+  margin-top: 15px;
 }
 
 #submit-btn:hover {
