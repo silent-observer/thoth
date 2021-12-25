@@ -229,11 +229,10 @@ def question():
         return redirect(url_for('login'))
     
     error = None
-    username = None
+    username = session['username']
     if request.method == 'POST':
         title = request.form['title']
         question = request.form['question']
-        username = session['username']
         discipline = request.form['discipline']
         date = DateTime.now()
 
