@@ -230,6 +230,7 @@ def question():
     
     error = None
     username = session['username']
+
     if request.method == 'POST':
         title = request.form['title']
         question = request.form['question']
@@ -257,7 +258,7 @@ def question():
                     r'MATCH (U:User {username:$username}), (D:Discipline {name:$discipline}) CREATE (D)<-[:CORRESPONDS]-(Q:Question {title:$title, question:$question, id: $id, date: $date, rating: 0, views: 0, needs_update: false})<-[r:ASKED]-(U)',
                     title=title, question=question, username = username, id=id, date=date, discipline=discipline
                 )
-                return redirect(url_for('q', id=id))
+                return url_for('q', id=id)
    
 
     with get_db().session() as db:
@@ -267,6 +268,7 @@ def question():
             if r['s']['name'] not in data:
                 data[r['s']['name']] = []
             data[r['s']['name']].append(r['d']['name'])
+    
     return render_template('question.html', data=data, error=error, logged_in=True, my_name=username)
 
 

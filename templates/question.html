@@ -8,9 +8,6 @@
 
 {%block content%}
 <section class="question">
-{%if error is not none%}
-  <p>Ошибка: {{error}}</p>
-{%endif%}
   <form method="post">
     <div class="question-body">
       <input type="text" id="title" name="title" placeholder="Введите заголовок..."><br>
