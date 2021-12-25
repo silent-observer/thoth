@@ -27,11 +27,12 @@
     <div class="question-body">
       <div class="question-title">
         <a href="{{url_for('q', id=q['id'])}}">{{q['title']}}</a>
-        <img class="hide-icon" q_id="{{q['id']}}" src="{{url_for('static', filename='resources/hide_icon.png')}}">
       </div>
       <p>{{q['text']}}</p>
     </div>
   </div>
+  <button class="unreport-btn" q_id="{{q['id']}}">Вернуть</button>
+  <button class="hide-btn" q_id="{{q['id']}}">Удалить</button>
 </section>
 {%endfor%}
 
@@ -40,7 +41,6 @@
   <div class="answer-header">
     <div class="aheader-date">
       <span class="date">{{answer['date']}}</span>
-      <img class="hide-icon" a_id="{{answer['id']}}" src="{{url_for('static', filename='resources/hide_icon.png')}}">
     </div>
     <div class="aheader-user">
       <div class="username">{{answer['author']['name']}}</div>
@@ -55,18 +55,23 @@
       <p>{{answer['text']}}</p>
     </div>
   </div>
+  <button class="unreport-btn" a_id="{{answer['id']}}">Вернуть</button>
+  <button class="hide-btn" a_id="{{answer['id']}}">Удалить</button>
 </section>
 {%endfor%}
 
 {%for comment in data['comments']%}
-<div class="comment">
-  <div class="profile-picture">
-    <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
+<section class="comment-section">
+  <div class="comment">
+    <div class="profile-picture">
+      <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
+    </div>
+    <div class="comment-body">
+      <p>{{comment['text']}}</p>
+    </div>
   </div>
-  <div class="comment-body">
-    <p>{{comment['text']}}</p>
-    <img c_id="{{comment['id']}}" class="hide-icon" src="{{url_for('static', filename='resources/hide_icon.png')}}">
-  </div>
-</div>
+  <button class="unreport-btn" c_id="{{comment['id']}}">Вернуть</button>
+  <button class="hide-btn" c_id="{{comment['id']}}">Удалить</button>
+</section>
 {%endfor%}
 {%endblock%}

@@ -132,8 +132,12 @@
   margin-left: 18px;
 }
 
-.question, .answer {
-  margin-bottom: 35px;
+.question, .answer, .comment-section {
+  padding-bottom: 60px;
+}
+
+.comment-section {
+  margin-top: 20px;
 }
 
 .question-body, .answer-body {
@@ -254,10 +258,61 @@ textarea {
   margin-bottom: 17px;
 }
 
-.hide-icon {
-  width: 14.4px;
-  height: 14.68px;
-  margin: 5px;
-  float: right;
+.unreport-btn, .hide-btn {
+  margin-top: 20px;
+  margin-bottom: 20px;
+
+  font-family: 'Strong';
+  font-style: normal;
+  font-weight: normal;
+  font-size: 15px;
+  padding: 0;
+
+  width: 160px;
+  height: 25px;
+  box-shadow: 0px 1.12926px 1.12926px rgba(0, 0, 0, 0.25);
+  border: 0;
+  border-radius: 6.49324px;
+  color: #000000;
+  text-align: center;
+  align-self: flex-end;
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  line-height: 25px;
+  transition: background-color 0.3s;
+
+  
   cursor: pointer;
+}
+
+.unreport-btn {
+  float: left;
+  background: rgba(140, 175, 0, 0.8);
+}
+
+.unreport-btn:hover {
+  background: rgba(140, 175, 0, 0.56);
+}
+
+.unreport-btn:active {
+  background: rgba(97, 121, 0, 0.67);
+}
+
+.hide-btn {
+  float: right;
+  background: rgba(123, 53, 2, 1);
+}
+
+.hide-btn:hover {
+  background: rgba(123, 53, 2, 0.7);
+}
+
+.hide-btn:active {
+  background: rgba(123, 53, 2, 0.3);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
 }
