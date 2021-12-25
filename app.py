@@ -70,14 +70,28 @@ def main():
         questions = []
         if logged_in:
             result = db.run(r'''
-                MATCH (u:User {username:$username})
-                MATCH (u)-[v:VIEWED]->(qv:Question)
-                MATCH (qv)-[s:SIMILAR]-(qs:Question)
-                WHERE NOT (u)-[:VIEWED]->(qs) AND NOT ()-[:HIDDEN]->(qs)
-                WITH u, qs, sum(s.jaccard) as j
-                MATCH (a:User)-[:ASKED]->(qs)-[:CORRESPONDS]->(d:Discipline)
+                MATCH (u:User {username:"admin"})
+                CALL {
+                    WITH u
+                    MATCH (u)-[v:VIEWED]->(qv:Question)
+                    MATCH (qv)-[s:SIMILAR]-(qs:Question)
+                    WHERE NOT ()-[:HIDDEN]->(qs)
+                    RETURN qs, sum(s.jaccard) as j
+
+                    UNION
+
+                    MATCH (qs:Question)
+                    WHERE NOT ()-[:HIDDEN]->(qs)
+                    WITH qs, duration.inSeconds(qs.date, datetime()).seconds as secondsPast
+                    RETURN qs, (qs.views + qs.rating * 2 + 50.0 / (1.0 + 0.00001 * secondsPast)) / 500 as j
+                }
+                WITH DISTINCT qs, j
+                OPTIONAL MATCH (u)-[viewed:VIEWED]->(qs)
                 OPTIONAL MATCH (u)-[voted:VOTED]->(qs)
-                RETURN a, qs, d, voted, j
+                RETURN qs, CASE
+                    WHEN viewed IS NULL THEN j * 2
+                    ELSE j
+                END as j
                 ORDER BY j DESC
                 LIMIT 50''', username=username
             )
@@ -85,8 +99,8 @@ def main():
             result = db.run(r'''
                 MATCH (qs:Question)
                 WHERE NOT ()-[:HIDDEN]->(qs)
-                WITH qs, duration.inSeconds(datetime(), qs.date).seconds as secondsPast
-                WITH qs, qs.views + qs.rating * 2 - secondsPast + 50.0 / (1.0 + 0.00001 * secondsPast) as j
+                WITH qs, duration.inSeconds(qs.date, datetime()).seconds as secondsPast
+                WITH qs, qs.views + qs.rating * 2 + 50.0 / (1.0 + 0.00001 * secondsPast) as j
                 MATCH (a:User)-[:ASKED]->(qs)-[:CORRESPONDS]->(d:Discipline)
                 RETURN a, qs, d, j
                 ORDER BY j DESC
