@@ -14,7 +14,7 @@ $(document).ready(function() {
             })
         }
 
-        $(this).closest('.question, .answer, .comment').hide()
+        $(this).closest('.question, .answer, .comment-section').hide()
     })
 
     $('.unreport-btn').click(function() {
@@ -32,6 +32,6 @@ $(document).ready(function() {
             })
         }
 
-        $(this).closest('.question, .answer, .comment').hide()
+        $(this).closest('.question, .answer, .comment-section').hide()
     })
 })
