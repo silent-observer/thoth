@@ -149,23 +149,19 @@ def is_comment_text_valid(text):
 
 @app.route("/register", methods=['POST', 'GET'])
 def register():
-    form_text = '''
-        <p>Registration form:</p>
-        <form method="post">
-            <label for="username">Username:</label><br>
-            <input type="text" id="username" name="username"><br>
-            <label for="password">Password:</label><br>
-            <input type="password" id="password" name="password"><br>
-            <input type="submit" value="Submit">
-        </form>
-        '''
+    if 'username' in session:
+        return redirect(url_for('main'))
+    
+    error = None
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         if not is_username_valid(username):
-            return '<p>Логин пользователя может содержать только латинские буквы, цифры и символы ".", "-", "_", в количестве от 4 до 20.</p>' + form_text
+            error = 'Логин пользователя может содержать только латинские буквы, цифры и символы ".", "-", "_", в количестве от 4 до 20.'
+            return render_template('register.html', error=error, logged_in=False)
         if not is_password_valid(password):
-            return '<p>Пароль может содержать только латинские и кириллические буквы, цифры и символы из списка "!@#$;%^:&?*()_-+=\'"", в количестве от 5 до 50.</p>' + form_text
+            error = 'Пароль может содержать только латинские и кириллические буквы, цифры и символы из списка "!@#$;%^:&?*()_-+=\'"", в количестве от 5 до 50.'
+            return render_template('register.html', error=error, logged_in=False)
         
         with get_db().session() as db:
             result = db.run(
@@ -173,7 +169,8 @@ def register():
                 username=username
                 ).single()
             if result is not None:
-                return '<p>Этот логин уже занят, пожалуйста, выберите другой</p>' + form_text
+                error = 'Этот логин уже занят, пожалуйста, выберите другой!'
+                return render_template('register.html', error=error, logged_in=False)
             pass_hash = base64.b64encode(bcrypt.hashpw(
                 password.encode('utf-8'), bcrypt.gensalt()
                 )).decode('ascii')
@@ -182,9 +179,9 @@ def register():
                 r'CREATE (n:User {username:$username, pass_hash:$pass_hash, register_date:$register_date, rating: 0})',
                 username=username, pass_hash=pass_hash, register_date=register_date
             )
-            return redirect(url_for('users'))
-    else:
-        return form_text
+            return redirect(url_for('main'))
+    
+    return render_template('register.html', error=error, logged_in=False)
 
 @app.route("/login", methods=['POST', 'GET'])
 def login():

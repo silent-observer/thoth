@@ -1,0 +1,19 @@
+{%extends "basic.html"%}
+{%block head%}
+  {{super()}}
+  <link rel="stylesheet" href="{{url_for('static', filename='styles/register.css')}}">
+{%endblock%}
+
+{%block content%}
+<section class="register">
+  <h2 class="hello-header">Добро пожаловать!</h2>
+{%if error is not none%}
+  <p>Ошибка: {{error}}</p>
+{%endif%}
+  <form method="post">
+      <input type="text" id="username" name="username" placeholder="Логин"><br>
+      <input type="password" id="password" name="password" placeholder="Пароль"><br>
+      <input type="submit" value="Зарегистрироваться" id="submit-btn">
+  </form>
+</section>
+{%endblock%}
