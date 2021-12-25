@@ -143,6 +143,7 @@
   border: 0.85px solid #8CAF00;
   box-sizing: border-box;
   border-radius: 6.49324px 6.49324px 0px 0px;
+  position: relative;
 }
 
 .question-title {
@@ -157,6 +158,7 @@
 .question-body p, .answer-body p {
   margin-left: 15px;
   margin-top: 10px;
+  padding-bottom: 15px;
 }
 
 .comments {
@@ -182,6 +184,7 @@
   margin-left: 9px;
   flex-grow: 1;
   padding: 6px 6px;
+  position: relative;
 }
 
 .comment-send-form {
@@ -255,9 +258,16 @@ textarea {
 }
 
 .report-icon {
-  width: 14.4px;
-  height: 14.68px;
-  margin: 5px;
-  float: right;
+  width: 22px;
+  height: 22px;
+
+  position: absolute;
   cursor: pointer;
+  right: 5px;
+  bottom: 5px;
+}
+
+.comment-body .report-icon {
+  width: 16px;
+  height: 16px;
 }

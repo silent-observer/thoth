@@ -38,11 +38,11 @@
   <div class="question-main">
     <div class="question-body">
       <div class="question-title">{{data['question']['title']}}
+      </div>
+      <p>{{data['question']['text']}}</p>
       {% if logged_in %}
       <img class="report-icon" q_id="{{data['question']['id']}}" src="{{url_for('static', filename='resources/report_icon.png')}}">
       {% endif %}
-      </div>
-      <p>{{data['question']['text']}}</p>
     </div>
     <div class="comments">
     {%for comment in data['question']['comments']%}
@@ -78,9 +78,6 @@
   <div class="answer-header">
     <div class="aheader-date">
       <span class="date">{{answer['date']}}</span>
-      {% if logged_in %}
-      <img class="report-icon" a_id="{{answer['id']}}" src="{{url_for('static', filename='resources/report_icon.png')}}">
-      {% endif %}
     </div>
     <div class="aheader-user">
       <div class="voting" a_id="{{answer['id']}}" current_vote="{{answer['current_vote']}}" logged_in="{{logged_in}}">
@@ -106,6 +103,9 @@
   <div class="answer-main">
     <div class="answer-body">
       <p>{{answer['text']}}</p>
+      {% if logged_in %}
+      <img class="report-icon" a_id="{{answer['id']}}" src="{{url_for('static', filename='resources/report_icon.png')}}">
+      {% endif %}
     </div>
     <div class="comments">
     {%for comment in answer['comments']%}
