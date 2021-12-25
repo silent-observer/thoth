@@ -57,6 +57,21 @@
 
 .profile-picture {
   display: flex;
+  position: relative;
+}
+
+.user-rating {
+  position: absolute;
+  bottom: -5px;
+  background-color: rgba(140, 175, 0, 0.3);
+  border-radius: 20px;
+  min-width: 20px;
+  text-align: center;
+  font-size: 15px;
+  min-height: 20px;
+  line-height: 20px;
+  padding: 0px 4px;
+  left: 50%;
 }
 
 .qheader-user .profile-picture {
