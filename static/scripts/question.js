@@ -9,7 +9,7 @@ $(document).ready(function() {
     subject.prop("selectedIndex", -1)
 
     subject.change(function() {
-        $('#discipline-div').show()
+        $('#discipline-div').removeClass('disabled-div')
 
         discipline = $('#discipline')
         discipline.empty()
@@ -20,5 +20,10 @@ $(document).ready(function() {
             }))
         )
         discipline.prop("selectedIndex", -1)
+        discipline.removeAttr('disabled')
+    })
+
+    $('#discipline').change(function() {
+        $('.submit-btn').removeAttr('disabled')
     })
 })

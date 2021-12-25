@@ -11,22 +11,20 @@
 {%if error is not none%}
   <p>Ошибка: {{error}}</p>
 {%endif%}
-  <p>Форма вопроса:</p>
   <form method="post">
-      <label for="title">Заголовок:</label><br>
-      <input type="text" id="title" name="title"><br>
-      <label for="question">Вопрос:</label><br>
-      <textarea id="question" name="question"></textarea>
-      <br>
-      <div id="subject-div">
-        <label for="subject">Предмет:</label><br>
-        <select name="subject" id="subject"></select>
-      </div>
-      <div id="discipline-div" style="display: none;">
-        <label for="subject">Дисциплина:</label><br>
-        <select name="discipline" id="discipline"></select>
-      </div>
-      <input type="submit" value="Submit">
+    <div class="question-body">
+      <input type="text" id="title" name="title" placeholder="Введите заголовок..."><br>
+      <textarea id="question" name="question" placeholder="Введите вопрос..."></textarea>
+    </div>
+    <div id="subject-div">
+      <label for="subject">Предмет:</label><br>
+      <select name="subject" id="subject"></select>
+    </div>
+    <div id="discipline-div" class="disabled-div">
+      <label for="subject">Дисциплина:</label><br>
+      <select name="discipline" id="discipline" disabled></select>
+    </div>
+    <input type="submit" class="submit-btn" disabled value="Отправить">
   </form>
 </section>
 {%endblock%}
