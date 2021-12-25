@@ -716,3 +716,34 @@ def unhide():
                 DELETE r''', id=int(c_id)
             )
     return ''
+
+@app.route("/unreport",methods=['POST'])
+def unreport():
+    logged_in = 'username' in session
+    if not logged_in: return ''
+    username = session['username']
+    if not is_moderator(username): return ''
+
+    with get_db().session() as db:
+        if 'q_id' in request.form:
+            q_id = request.form['q_id']
+            db.run(
+                r'MATCH (U:User)-[r:REPORTED]->(Q:Question {id:$id}) DELETE r', id=q_id
+            )
+        elif 'a_id' in request.form:
+            a_id = request.form['a_id']
+            db.run(
+                r'''
+                MATCH (U:User)-[r:REPORTED]->(A:Answer) 
+                WHERE id(A) = $id
+                DELETE r''', id=int(a_id)
+            )
+        elif 'c_id' in request.form:
+            c_id = request.form['c_id']
+            db.run(
+                r'''
+                MATCH (U:User)-[r:REPORTED]->(C:Comment) 
+                WHERE id(C) = $id
+                DELETE r''', id=int(c_id)
+            )
+    return ''
