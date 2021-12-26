@@ -1,0 +1,35 @@
+{%extends "basic.html"%}
+{%block head%}
+  {{super()}}
+  <link rel="stylesheet" href="{{url_for('static', filename='styles/search.css')}}">
+  <script>
+    let discipline_data = {{discipline_data |tojson|safe}};
+    let search_text = "{{search_text}}";
+    let search_data = {{search_data |tojson|safe}};
+  </script>
+  <script src="{{url_for('static', filename='scripts/search.js')}}"></script>
+{%endblock%}
+
+{%block content%}
+
+<div id="selects-div">
+  <div id="subject-div" class="select-div">
+    <select name="subject" id="subject"></select>
+  </div>
+  <div id="discipline-div" class="select-div disabled-div">
+    <select name="discipline" id="discipline" disabled></select>
+  </div>
+  <div id="sorting-div" class="select-div disabled-div">
+    <select name="sorting" id="sorting">
+      <option value="rel">По релевантности</option>
+      <option value="dateG">Самые новые</option>
+      <option value="dateL">Самые старые</option>
+      <option value="rating">По рейтингу</option>
+      <option value="answersG">Больше всего ответов</option>
+      <option value="answersL">Меньше всего ответов</option>
+    </select>
+  </div>
+</div>
+
+<div id="search-results"></div>
+{%endblock%}

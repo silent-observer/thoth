@@ -85,6 +85,7 @@ input:focus {
   width: 14.4px;
   height: 14.68px;
   margin: 5px;
+  cursor: pointer;
 }
 
 #login-icon {

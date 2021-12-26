@@ -4,6 +4,9 @@ $(document).ready(function() {
             window.location.href = "/search?s=" + $('#search-input').val()
         }
     })
+    $('#search-icon').click(function() {
+        window.location.href = "/search?s=" + $('#search-input').val()
+    })
     $('#header-logo').click(function() {
         window.location.href = "/"
     })

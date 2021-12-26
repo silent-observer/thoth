@@ -588,43 +588,92 @@ def reported():
         }
     return render_template('reported.html', data=data, logged_in=True, my_name=username, moderator=True, rating=rating)
 
+def get_search_results(search_text, discipline, sorting, db):
+    if discipline == 'None':
+        discipline = None
+
+    answer_string = 'RETURN node, score '
+    if sorting == 'rel' or sorting == None:
+        sort_string = 'ORDER BY score DESC '
+    elif sorting == 'dateG':
+        sort_string = 'ORDER BY node.date DESC '
+    elif sorting == 'dateL':
+        sort_string = 'ORDER BY node.date ASC '
+    elif sorting == 'rating':
+        sort_string = 'ORDER BY node.rating DESC '
+    elif sorting == 'answersG':
+        answer_string = 'OPTIONAL MATCH (a:Answer)-[:TO]->(node) RETURN node, score, count(a) as c '
+        sort_string = 'ORDER BY c DESC '
+    elif sorting == 'answersL':
+        answer_string = 'OPTIONAL MATCH (a:Answer)-[:TO]->(node) RETURN node, score, count(a) as c '
+        sort_string = 'ORDER BY c ASC '
+
+    if search_text == '':
+        result = []
+    else:
+        if discipline == None:
+            result = db.run(
+                r'''
+                CALL db.index.fulltext.queryNodes("titlesAndTexts", $text)
+                YIELD node, score
+                WHERE NOT ()-[:HIDDEN]->(node) ''' + answer_string + sort_string +
+                'LIMIT 50', text=search_text
+            )
+        else:
+            result = db.run(
+                r'''
+                CALL db.index.fulltext.queryNodes("titlesAndTexts", $text)
+                YIELD node, score
+                WHERE NOT ()-[:HIDDEN]->(node)
+                MATCH (:Discipline {name:$discipline})<-[:CORRESPONDS]-(node) ''' +
+                answer_string  + sort_string +
+                'LIMIT 50', text=search_text, discipline=discipline
+            )
+
+    questions = []
+    for r in result:
+        text = r['node']['question']
+        if len(text) > 200:
+            text = text[:200] + '...'
+
+        question = {
+            'id': r['node']['id'],
+            'title': r['node']['title'],
+            'rating': r['node']['rating'],
+            'text': text
+        }
+        questions.append(question)
+    return questions
+
+@app.route("/api/search")
+def apisearch():
+    search_text = request.args.get('s', '')
+    discipline = request.args.get('d', None)
+    sorting = request.args.get('sort', None)
+    with get_db().session() as db:
+        questions = get_search_results(search_text, discipline, sorting, db)
+    return {'questions': questions}
+
 @app.route("/search")
 def search():
     search_text = request.args.get('s', '')
-    form_text = f'''
-    <form method="get">
-        <input type="text" id="s" name="s" value="{search_text}">
-        <input type="submit" value="Find">
-    </form>
-    '''
-    if search_text == '':
-        return form_text
+    discipline = request.args.get('d', None)
+    sorting = request.args.get('sort', None)
+    logged_in = 'username' in session
+    username = session.get('username', '')
+    moderator = session.get('username', False)
+    rating = session.get('rating', 0)
     
-    text = '<h2>Search results</h2>'
-
     with get_db().session() as db:
-        result = db.run(
-            'CALL db.index.fulltext.queryNodes("titlesAndTexts", $text) YIELD node, score WHERE NOT ()-[:HIDDEN]->(node) RETURN node, score LIMIT 50', text=search_text
-        )
-
-        result_texts = []
+        result = db.run(r'MATCH (s:Subject)-[:CONTAINS]->(d:Discipline) RETURN s, d')
+        discipline_data = {}
         for r in result:
-            url = url_for('q', id=r['node']['id'])
-            title = r['node']['title']
-            question = r['node']['question']
-            if len(question) > 30:
-                question = question[:30] + '...'
-
-            result_texts.append(f'''
-                <li><b><a href={url}>{title}</a></b><br>
-                {question}
-                </li>
-            ''')
-        if len(result_texts) == 0:
-            text += '<p>Nothing was found</p>'
-        else:
-            text += '<ul>' + ''.join(result_texts) + '</ul>'
-        return form_text + text
+            if r['s']['name'] not in discipline_data:
+                discipline_data[r['s']['name']] = []
+            discipline_data[r['s']['name']].append(r['d']['name'])
+        questions = get_search_results(search_text, discipline, sorting, db)
+    
+    return render_template('search.html', discipline_data=discipline_data, logged_in=logged_in, my_name=username, moderator=moderator, rating=rating, search_data={'questions': questions}, search_text=search_text)
 
 @app.route("/hide",methods=['POST'])
 def hide():
