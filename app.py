@@ -65,7 +65,8 @@ def close_connection(exception):
 @app.route("/")
 def main():
     logged_in = 'username' in session
-    username = session.get('username')
+    username = session.get('username', '')
+    moderator = session.get('moderator', false)
     with get_db().session() as db:
         questions = []
         if logged_in:
@@ -122,7 +123,7 @@ def main():
         data = {
             'questions': questions
         }
-    return render_template('feed.html', data=data, logged_in=logged_in, my_name=username)
+    return render_template('feed.html', data=data, logged_in=logged_in, my_name=username, moderator=moderator)
 
 cyrillic_letters = 'АаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя'
 
@@ -180,6 +181,9 @@ def register():
                 r'CREATE (n:User {username:$username, pass_hash:$pass_hash, register_date:$register_date, rating: 0})',
                 username=username, pass_hash=pass_hash, register_date=register_date
             )
+
+            session['username'] = username
+            session['moderator'] = False
             return redirect(url_for('main'))
     
     return render_template('register.html', error=error, logged_in=False)
@@ -211,6 +215,7 @@ def login():
             pass_hash = base64.b64decode(result['n']['pass_hash'])
             if bcrypt.hashpw(password.encode('utf-8'), pass_hash) == pass_hash:
                 session['username'] = username
+                session['moderator'] = 'Moderator' in result['n'].labels
                 return redirect(url_for('main'))
             else:
                 error = 'Неверный пароль!'
@@ -221,6 +226,7 @@ def login():
 @app.route("/logout")
 def logout():
     session.pop('username', None)
+    session.pop('moderator', None)
     return redirect(url_for('main'))
 
 @app.route("/question", methods=['POST', 'GET'])
@@ -230,6 +236,7 @@ def question():
     
     error = None
     username = session['username']
+    moderator = session['moderator']
 
     if request.method == 'POST':
         title = request.form['title']
@@ -269,7 +276,7 @@ def question():
                 data[r['s']['name']] = []
             data[r['s']['name']].append(r['d']['name'])
     
-    return render_template('question.html', data=data, error=error, logged_in=True, my_name=username)
+    return render_template('question.html', data=data, error=error, logged_in=True, my_name=username, moderator=moderator)
 
 
 @app.route("/q/<id>",methods=['POST', 'GET'])
@@ -310,7 +317,8 @@ def q(id):
                     )
             return redirect('q', id=id)
 
-        username = session['username'] if 'username' in session else ''
+        username = session.get('username', '') 
+        moderator = session.get('moderator', False)
 
         result = db.run(
         r'''
@@ -388,7 +396,7 @@ def q(id):
                 id=id, username=username
             )
 
-        return render_template('q.html', data=data, logged_in=logged_in, my_name=username, errors=errors)
+        return render_template('q.html', data=data, logged_in=logged_in, my_name=username, errors=errors, moderator=moderator)
         # return f'''<h1>{title}</h1>'''    
 # HTML-собрать и на странице поста указать автора поста
 
@@ -550,7 +558,7 @@ def reported():
             'answers': answers,
             'comments': comments
         }
-    return render_template('reported.html', data=data, logged_in=True, my_name=username)
+    return render_template('reported.html', data=data, logged_in=True, my_name=username, moderator=True)
 
 @app.route("/search")
 def search():
@@ -689,7 +697,7 @@ def hidden():
             'answers': answers,
             'comments': comments
         }
-    return render_template('hidden.html', data=data, logged_in=True, my_name=username)
+    return render_template('hidden.html', data=data, logged_in=True, my_name=username, moderator=True)
 
 @app.route("/unhide",methods=['POST'])
 def unhide():
@@ -752,3 +760,58 @@ def unreport():
                 DELETE r''', id=int(c_id)
             )
     return ''
+
+@app.route("/settings")
+def settings():
+    logged_in = 'username' in session
+    if not logged_in: return redirect(url_for('main'))
+    username = session['username']
+    moderator = session['moderator']
+    if not is_moderator(username): return redirect(url_for('main'))
+
+    with get_db().session() as db:
+        questions = []
+        result = db.run(r'''
+            MATCH (:User)-[:HIDDEN]->(q:Question)
+            MATCH (d:Discipline)<-[:CORRESPONDS]-(q)<-[:ASKED]-(a:User)
+            RETURN d, a, q''')
+        questions = [{
+            'id': r['q']['id'],
+            'title': r['q']['title'],
+            'text': r['q']['question'],
+            'date': r['q']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
+            'rating': r['q']['rating'],
+            'author': {'name': r['a']['username'], 'rating': r['a']['rating']},
+            'discipline': r['d']['name']
+        } for r in result]
+
+        result = db.run(r'''
+            MATCH (:User)-[:HIDDEN]->(a:Answer)
+            MATCH (a)<-[:ANSWERED]-(u:User)
+            RETURN u, a''')
+        answers = [{
+            'id': r['a'].id,
+            'text': r['a']['answer'],
+            'date': r['a']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
+            'author': {'name': r['u']['username'], 'rating': r['u']['rating']},
+            'rating': r['a']['rating']
+        } for r in result]
+        
+        result = db.run(r'''
+            MATCH (:User)-[:HIDDEN]->(c:Comment)
+            MATCH (c)<-[:COMMENTED]-(u:User)
+            RETURN u, c''')
+        comments = [{
+            'date': r['c']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
+            'author': {'name': r['u']['username'], 'rating': r['u']['rating']},
+            'text': r['c']['comment'],
+            'id': r['c'].id
+        } for r in result]
+        
+
+        data = {
+            'questions': questions,
+            'answers': answers,
+            'comments': comments
+        }
+    return render_template('hidden.html', data=data, logged_in=True, my_name=username, moderator=moderator)
