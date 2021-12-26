@@ -97,7 +97,7 @@ def main():
                     WITH qs, duration.inSeconds(qs.date, datetime()).seconds as secondsPast
                     RETURN qs, (qs.views + qs.rating * 2 + 50.0 / (1.0 + 0.00001 * secondsPast)) / 500 as j
                 }
-                WITH DISTINCT qs, j
+                WITH u, qs, max(j) as j
                 MATCH (a:User)-[:ASKED]->(qs)-[:CORRESPONDS]->(d:Discipline)
                 OPTIONAL MATCH (u)-[viewed:VIEWED]->(qs)
                 OPTIONAL MATCH (u)-[voted:VOTED]->(qs)

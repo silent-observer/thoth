@@ -16,4 +16,7 @@ $(document).ready(function() {
     $('#logout-icon').click(function() {
         window.location.href = "/logout"
     })
+    $('#new-question-icon').click(function() {
+        window.location.href = "/question"
+    })
 })
