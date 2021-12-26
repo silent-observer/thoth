@@ -19,15 +19,34 @@
         <img id="search-icon" src="{{url_for('static', filename='resources/search_icon.png')}}">
         <input id="search-input">
       </div>
-      {% if logged_in %}
-      <div id="my-profile">
-        <p id="my-username">{{my_name}}</p>
+      <div id="header-btn-container">
+        {% if logged_in %}
+        <img id="new-question-icon" src="{{url_for('static', filename='resources/new_question_icon.png')}}" title="Задать вопрос">
+        <div class="dropdown">
+          <img id="menu-icon" src="{{url_for('static', filename='resources/menu_icon.png')}}">
+          <div class="dropdown-content">
+            <div class="profile-data">
+              <div class="username">{{my_name}}</div>
+              <div class="profile-picture">
+                <img src="{{url_for('static', filename='resources/default_prof_pic.png')}}">
+                <p class="user-rating">{{my_rating}}</p>
+              </div>
+            </div>
+            <a href="{{url_for('question')}}">Предпочтения</a>
+            {% if moderator %}
+            <a href="{{url_for('reported')}}">Жалобы</a>
+            <a href="{{url_for('hidden')}}">Скрытые</a>
+            {% endif %}
+          </div>
+        </div>
         <img id="logout-icon" src="{{url_for('static', filename='resources/logout_icon.png')}}" title="Выйти">
+      
+      
+        {% else %}
+        <img id="login-icon" src="{{url_for('static', filename='resources/login_icon.png')}}" title="Войти">
+        <img id="register-icon" src="{{url_for('static', filename='resources/register_icon.png')}}" title="Зарегистрироваться">
+        {% endif %}
       </div>
-      {% else %}
-      <img id="login-icon" src="{{url_for('static', filename='resources/login_icon.png')}}" title="Войти">
-      <img id="register-icon" src="{{url_for('static', filename='resources/register_icon.png')}}" title="Зарегистрироваться">
-      {% endif %}
     </div>
   </header>
   <div id="wrapper">

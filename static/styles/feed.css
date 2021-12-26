@@ -152,6 +152,7 @@
   border-radius: 6.49324px 6.49324px 0 0;
   padding: 6px 24px;
   margin: -0.8px;
+  margin-right: -1px;
 }
 
 .question-body p, .answer-body p {
