@@ -8,7 +8,7 @@ import bcrypt, base64
 from werkzeug.utils import redirect
 import random, atexit
 from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 
 neo4j_pass = os.environ.get('NEO4J_PASS')
 neo4j_uri = 'neo4j+s://1f59f68c.databases.neo4j.io'
@@ -62,16 +62,27 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
+def update_rating(db, session):
+    if 'username' not in session: return
+    print(session)
+    if datetime.now(timezone.utc) - session['last_update'] > timedelta(hours=1):
+        result = db.run(r'MATCH (u:User {username:$username}) RETURN u', username=session['username']).single()
+        session['rating'] = result['u']['rating']
+        session['last_update'] = datetime.now()
+
+
 @app.route("/")
 def main():
     logged_in = 'username' in session
     username = session.get('username', '')
     moderator = session.get('moderator', False)
     with get_db().session() as db:
+        update_rating(db, session)
+        rating = session.get('rating', 0)
         questions = []
         if logged_in:
             result = db.run(r'''
-                MATCH (u:User {username:"admin"})
+                MATCH (u:User {username:$username})
                 CALL {
                     WITH u
                     MATCH (u)-[v:VIEWED]->(qv:Question)
@@ -123,7 +134,7 @@ def main():
         data = {
             'questions': questions
         }
-    return render_template('feed.html', data=data, logged_in=logged_in, my_name=username, moderator=moderator)
+    return render_template('feed.html', data=data, logged_in=logged_in, my_name=username, moderator=moderator, rating=rating)
 
 cyrillic_letters = 'АаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя'
 
@@ -184,6 +195,8 @@ def register():
 
             session['username'] = username
             session['moderator'] = False
+            session['rating'] = 0
+            session['last_update'] = datetime.now()
             return redirect(url_for('main'))
     
     return render_template('register.html', error=error, logged_in=False)
@@ -216,6 +229,8 @@ def login():
             if bcrypt.hashpw(password.encode('utf-8'), pass_hash) == pass_hash:
                 session['username'] = username
                 session['moderator'] = 'Moderator' in result['n'].labels
+                session['rating'] = result['n']['rating']
+                session['last_update'] = datetime.now()
                 return redirect(url_for('main'))
             else:
                 error = 'Неверный пароль!'
@@ -227,6 +242,8 @@ def login():
 def logout():
     session.pop('username', None)
     session.pop('moderator', None)
+    session.pop('rating', None)
+    session.pop('last_update', None)
     return redirect(url_for('main'))
 
 @app.route("/question", methods=['POST', 'GET'])
@@ -237,6 +254,7 @@ def question():
     error = None
     username = session['username']
     moderator = session['moderator']
+    rating = session['rating']
 
     if request.method == 'POST':
         title = request.form['title']
@@ -276,7 +294,7 @@ def question():
                 data[r['s']['name']] = []
             data[r['s']['name']].append(r['d']['name'])
     
-    return render_template('question.html', data=data, error=error, logged_in=True, my_name=username, moderator=moderator)
+    return render_template('question.html', data=data, error=error, logged_in=True, my_name=username, moderator=moderator, rating=rating)
 
 
 @app.route("/q/<id>",methods=['POST', 'GET'])
@@ -319,6 +337,8 @@ def q(id):
 
         username = session.get('username', '') 
         moderator = session.get('moderator', False)
+        update_rating(db, session)
+        rating = session.get('rating', 0)
 
         result = db.run(
         r'''
@@ -396,7 +416,7 @@ def q(id):
                 id=id, username=username
             )
 
-        return render_template('q.html', data=data, logged_in=logged_in, my_name=username, errors=errors, moderator=moderator)
+        return render_template('q.html', data=data, logged_in=logged_in, my_name=username, errors=errors, moderator=moderator, rating=rating)
         # return f'''<h1>{title}</h1>'''    
 # HTML-собрать и на странице поста указать автора поста
 
@@ -489,7 +509,12 @@ def report():
 def is_moderator(username):
     with get_db().session() as db:
         result = db.run(r'MATCH (u:User:Moderator {username:$username}) RETURN u', username=username).single()
-        return result is not None
+        if result is not None:
+            session['rating'] = result['u']['rating'] # updates rating in session because why not
+            session['last_update'] = datetime.now()
+            return True
+        else:
+            return False
 
 @app.route("/reported")
 def reported():
@@ -497,6 +522,7 @@ def reported():
     if not logged_in: return redirect(url_for('main'))
     username = session['username']
     if not is_moderator(username): return redirect(url_for('main'))
+    rating = session['rating']
 
     with get_db().session() as db:
         questions = []
@@ -558,7 +584,7 @@ def reported():
             'answers': answers,
             'comments': comments
         }
-    return render_template('reported.html', data=data, logged_in=True, my_name=username, moderator=True)
+    return render_template('reported.html', data=data, logged_in=True, my_name=username, moderator=True, rating=rating)
 
 @app.route("/search")
 def search():
@@ -651,6 +677,7 @@ def hidden():
     if not logged_in: return redirect(url_for('main'))
     username = session['username']
     if not is_moderator(username): return redirect(url_for('main'))
+    rating = session['rating']
 
     with get_db().session() as db:
         questions = []
@@ -697,7 +724,7 @@ def hidden():
             'answers': answers,
             'comments': comments
         }
-    return render_template('hidden.html', data=data, logged_in=True, my_name=username, moderator=True)
+    return render_template('hidden.html', data=data, logged_in=True, my_name=username, moderator=True, rating=rating)
 
 @app.route("/unhide",methods=['POST'])
 def unhide():
@@ -768,6 +795,7 @@ def settings():
     username = session['username']
     moderator = session['moderator']
     if not is_moderator(username): return redirect(url_for('main'))
+    rating = session['rating']
 
     with get_db().session() as db:
         questions = []
@@ -814,4 +842,4 @@ def settings():
             'answers': answers,
             'comments': comments
         }
-    return render_template('hidden.html', data=data, logged_in=True, my_name=username, moderator=moderator)
+    return render_template('hidden.html', data=data, logged_in=True, my_name=username, moderator=moderator, rating=rating)
