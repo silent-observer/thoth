@@ -66,7 +66,7 @@ def close_connection(exception):
 def main():
     logged_in = 'username' in session
     username = session.get('username', '')
-    moderator = session.get('moderator', false)
+    moderator = session.get('moderator', False)
     with get_db().session() as db:
         questions = []
         if logged_in:
