@@ -64,7 +64,6 @@ def close_connection(exception):
 
 def update_rating(db, session):
     if 'username' not in session: return
-    print(session)
     if datetime.now(timezone.utc) - session['last_update'] > timedelta(hours=1):
         result = db.run(r'MATCH (u:User {username:$username}) RETURN u', username=session['username']).single()
         session['rating'] = result['u']['rating']
@@ -99,9 +98,12 @@ def main():
                 }
                 WITH u, qs, max(j) as j
                 MATCH (a:User)-[:ASKED]->(qs)-[:CORRESPONDS]->(d:Discipline)
+                WHERE NOT (u)-[:DISLIKES]->(d)
                 OPTIONAL MATCH (u)-[viewed:VIEWED]->(qs)
                 OPTIONAL MATCH (u)-[voted:VOTED]->(qs)
+                OPTIONAL MATCH (u)-[likes:LIKES]->(d)
                 RETURN a, qs, d, CASE
+                    WHEN viewed IS NULL AND likes IS NOT NULL THEN j * 4 + 10
                     WHEN viewed IS NULL THEN j * 2
                     ELSE j
                 END as j
