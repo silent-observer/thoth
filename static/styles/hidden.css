@@ -55,36 +55,12 @@
   flex-direction: row-reverse;
 }
 
-.profile-picture {
-  display: flex;
-  position: relative;
-}
-
-.user-rating {
-  position: absolute;
-  bottom: -5px;
-  background-color: rgba(140, 175, 0, 0.3);
-  border-radius: 20px;
-  min-width: 20px;
-  text-align: center;
-  font-size: 15px;
-  min-height: 20px;
-  line-height: 20px;
-  padding: 0px 4px;
-  left: 50%;
-}
-
 .qheader-user .profile-picture {
   margin-left: 12px;
 }
 
 .aheader-user .profile-picture {
   margin-right: 12px;
-}
-
-.profile-picture img {
-  width: 47.15px;
-  height: 47.15px;
 }
 
 .vote-up, .vote-down {
@@ -260,9 +236,4 @@ textarea {
   margin: 5px;
   float: right;
   cursor: pointer;
-}
-
-a {
-  text-decoration: none;
-  color: inherit;
 }
