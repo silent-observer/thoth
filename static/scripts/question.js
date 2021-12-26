@@ -7,6 +7,8 @@ $(document).ready(function() {
         }));
     }
     subject.prop("selectedIndex", -1)
+    $('#discipline').attr('disabled', '')
+    $('.submit-btn').attr('disabled', '')
 
     subject.change(function() {
         $('#discipline-div').removeClass('disabled-div')
@@ -21,6 +23,7 @@ $(document).ready(function() {
         )
         discipline.prop("selectedIndex", -1)
         discipline.removeAttr('disabled')
+        $('.list-btn').attr('disabled', '')
     })
 
     $('#discipline').change(function() {

@@ -788,58 +788,48 @@ def unreport():
             )
     return ''
 
-@app.route("/settings")
+@app.route("/settings",methods=['GET', 'POST'])
 def settings():
     logged_in = 'username' in session
     if not logged_in: return redirect(url_for('main'))
     username = session['username']
     moderator = session['moderator']
-    if not is_moderator(username): return redirect(url_for('main'))
     rating = session['rating']
 
+    if request.method == 'POST':
+        discipline = request.form['discipline']
+        with get_db().session() as db:
+            if request.form['action'] == 'like':
+                db.run(r'''
+                MATCH (u:User {username:$username}),(d:Discipline {name:$name})
+                MERGE (u)-[:LIKES]->(d)''', username=username, name=discipline)
+            elif request.form['action'] == 'dislike':
+                db.run(r'''
+                MATCH (u:User {username:$username}),(d:Discipline {name:$name})
+                MERGE (u)-[:DISLIKES]->(d)''', username=username, name=discipline)
+            elif request.form['action'] == 'delete':
+                db.run(r'''
+                MATCH (u:User {username:$username}),(d:Discipline {name:$name})
+                OPTIONAL MATCH (u)-[r1:DISLIKES]->(d)
+                OPTIONAL MATCH (u)-[r2:LIKES]->(d)
+                DELETE r1, r2''', username=username, name=discipline)
+        return ''
+
     with get_db().session() as db:
-        questions = []
-        result = db.run(r'''
-            MATCH (:User)-[:HIDDEN]->(q:Question)
-            MATCH (d:Discipline)<-[:CORRESPONDS]-(q)<-[:ASKED]-(a:User)
-            RETURN d, a, q''')
-        questions = [{
-            'id': r['q']['id'],
-            'title': r['q']['title'],
-            'text': r['q']['question'],
-            'date': r['q']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
-            'rating': r['q']['rating'],
-            'author': {'name': r['a']['username'], 'rating': r['a']['rating']},
-            'discipline': r['d']['name']
-        } for r in result]
+        result = db.run(r'MATCH (s:Subject)-[:CONTAINS]->(d:Discipline) RETURN s, d')
+        discipline_data = {}
+        for r in result:
+            if r['s']['name'] not in discipline_data:
+                discipline_data[r['s']['name']] = []
+            discipline_data[r['s']['name']].append(r['d']['name'])
 
-        result = db.run(r'''
-            MATCH (:User)-[:HIDDEN]->(a:Answer)
-            MATCH (a)<-[:ANSWERED]-(u:User)
-            RETURN u, a''')
-        answers = [{
-            'id': r['a'].id,
-            'text': r['a']['answer'],
-            'date': r['a']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
-            'author': {'name': r['u']['username'], 'rating': r['u']['rating']},
-            'rating': r['a']['rating']
-        } for r in result]
+        likes = []
+        dislikes = []
+        result = db.run(r'MATCH (:User {username:$username})-[:LIKES]->(d:Discipline) RETURN d', username=username)
+        for r in result:
+            likes.append(r['d']['name'])
+        result = db.run(r'MATCH (:User {username:$username})-[:DISLIKES]->(d:Discipline) RETURN d', username=username)
+        for r in result:
+            dislikes.append(r['d']['name'])
         
-        result = db.run(r'''
-            MATCH (:User)-[:HIDDEN]->(c:Comment)
-            MATCH (c)<-[:COMMENTED]-(u:User)
-            RETURN u, c''')
-        comments = [{
-            'date': r['c']['date'].to_native().strftime('%d.%m.%Y %H:%M'),
-            'author': {'name': r['u']['username'], 'rating': r['u']['rating']},
-            'text': r['c']['comment'],
-            'id': r['c'].id
-        } for r in result]
-        
-
-        data = {
-            'questions': questions,
-            'answers': answers,
-            'comments': comments
-        }
-    return render_template('hidden.html', data=data, logged_in=True, my_name=username, moderator=moderator, rating=rating)
+    return render_template('settings.html', discipline_data=discipline_data, logged_in=True, my_name=username, moderator=moderator, rating=rating, likes=likes, dislikes=dislikes)

@@ -55,22 +55,12 @@
   flex-direction: row-reverse;
 }
 
-.profile-picture {
-  display: flex;
-  position: relative;
-}
-
 .qheader-user .profile-picture {
   margin-left: 12px;
 }
 
 .aheader-user .profile-picture {
   margin-right: 12px;
-}
-
-.profile-picture img {
-  width: 47.15px;
-  height: 47.15px;
 }
 
 .user-rating {
@@ -253,13 +243,4 @@ textarea {
   box-sizing: border-box;
   border-radius: 6.49324px;
   margin-bottom: 17px;
-}
-
-a {
-  text-decoration: none;
-  color: inherit;
-}
-
-a:hover {
-  color: #8CAF00;
 }

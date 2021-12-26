@@ -1,0 +1,49 @@
+{%extends "basic.html"%}
+{%block head%}
+  {{super()}}
+  <link rel="stylesheet" href="{{url_for('static', filename='styles/settings.css')}}">
+  <script>let data = {{discipline_data |tojson|safe}};</script>
+  <script src="{{url_for('static', filename='scripts/settings.js')}}"></script>
+{%endblock%}
+
+{%block content%}
+<section class="settings">
+  <h2 class="hello-header">Предпочтения</h2>
+  <div id="subject-div">
+    <label for="subject">Предмет:</label><br>
+    <select name="subject" id="subject"></select>
+  </div>
+  <div id="discipline-div" class="disabled-div">
+    <label for="subject">Дисциплина:</label><br>
+    <select name="discipline" id="discipline" disabled></select>
+  </div>
+  <table class="settings-lists">
+    <tr class="settings-buttons">
+      <th><button class="list-btn" id="like-btn" disabled>Нравится</button></th>
+      <th><button class="list-btn" id="dislike-btn" disabled>Не нравится</button></th>
+    </tr>
+    <tr>
+      <td>
+        <ul class="settings-list" id="like-list">
+          {% for row in likes %}
+          <li>
+            {{row}}
+            <img class="delete-btn" val="{{row}}" src="{{url_for('static', filename='resources/cross_icon.png')}}">
+          </li>
+          {% endfor %}
+        </ol>
+      </td>
+      <td>
+        <ul class="settings-list" id="dislike-list">
+          {% for row in dislikes %}
+          <li>
+            {{row}}
+            <img class="delete-btn" val="{{row}}" src="{{url_for('static', filename='resources/cross_icon.png')}}">
+          </li>
+          {% endfor %}
+        </ol>
+      </td>
+    </tr>
+  </table>
+</section>
+{%endblock%}

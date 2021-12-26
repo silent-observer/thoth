@@ -1,0 +1,152 @@
+.hello-header {
+  font-size: 35px;
+  letter-spacing: 0.2em;
+  color: #8CAF00;
+  text-align: center;
+  width: 100%;
+  margin-bottom: 30px;
+}
+
+#subject-div {
+  margin-top: 20px;
+}
+
+#subject-div, #discipline-div {
+  position: relative;
+}
+
+#subject, #discipline {
+  width: 100%;
+  height: 37px;
+
+  font-family: 'Strong';
+  font-style: normal;
+  font-weight: normal;
+  font-size: 16px;
+
+  border: 0.85px solid #8CAF00;
+  border-radius: 6.5px 6.5px;
+  padding: 7px 12px;
+  background: rgba(92, 82, 82, 0.3);
+  color: #FFFFFF;
+
+  margin-top: 10px;
+  margin-bottom: 10px;
+
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  transition: border-color 0.3s;
+}
+
+#subject-div::after, #discipline-div::after {
+  content: "";
+  background: url("../resources/select_arrow.png") no-repeat right;
+  pointer-events: none;
+  height: 17px;
+  width: 25px;
+  display: block;
+  position: absolute;
+  bottom: 20px;
+  right: 10px;
+
+  transition: background-image 0.3s;
+}
+
+.disabled-div::after {
+  background: url("../resources/select_arrow_disabled.png") no-repeat right;
+}
+
+#discipline:disabled {
+  border-color: #505521;
+}
+
+.list-btn {
+  font-family: 'Strong';
+  font-style: normal;
+  font-weight: normal;
+  font-size: 15px;
+  padding: 0;
+
+  width: 100%;
+  height: 25px;
+  box-shadow: 0px 1.12926px 1.12926px rgba(0, 0, 0, 0.25);
+  border: 0;
+  border-radius: 6.49324px;
+  color: #000000;
+  text-align: center;
+  align-self: flex-end;
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  line-height: 25px;
+  transition: background-color 0.3s, color 0.3s;
+
+  margin: 0 auto;
+  cursor: pointer;
+  background: rgba(140, 175, 0, 0.8);
+}
+
+.list-btn:hover {
+  background: rgba(140, 175, 0, 0.56);
+}
+
+.list-btn:active {
+  background: rgba(97, 121, 0, 0.67);
+}
+
+.list-btn:disabled {
+  background: #505521;
+  color: black;
+}
+
+.settings-lists {
+  width: 100%;
+  margin-top: 35px;
+}
+
+.settings-lists th, .settings-lists td {
+  border: 1px solid transparent;
+  border-width: 8px 25px;
+  width: 50%;
+}
+
+table th:first-child, table td:first-child {
+  border-left-width: 0;
+}
+
+table th:last-child, table td:last-child {
+  border-right-width: 0;
+}
+
+table tr:first-child td, table tr:first-child th {
+  border-top-width: 0;
+}
+
+table tr:last-child td, table tr:last-child th {
+  border-bottom-width: 0;
+}
+
+.settings-list {
+  display: block;
+  background-color: #4A4242;
+  border: 1px solid #8CAF00;
+  border-radius: 7px;
+  min-height: 271px;
+  margin: 0;
+  padding: 15px 54px;
+  list-style-type: square;
+  font-size: 16px;
+}
+
+.settings-list li {
+  margin: 10px 0;
+}
+
+.delete-btn {
+  width: 14px;
+  height: 14px;
+  float: right;
+  margin-top: 3px;
+  cursor: pointer;
+}

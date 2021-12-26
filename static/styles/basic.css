@@ -202,12 +202,17 @@ input:focus {
   margin: 0 auto;
   width: 800px;
   background: #362F2F;
-  padding: 17px 84px 0 84px;
+  padding: 17px 84px 50px 84px;
 }
 
 .profile-picture {
   display: flex;
   position: relative;
+}
+
+.profile-picture img {
+  width: 47.15px;
+  height: 47.15px;
 }
 
 .user-rating {
@@ -222,4 +227,13 @@ input:focus {
   line-height: 20px;
   padding: 0px 4px;
   left: 50%;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+a:hover {
+  color: #8CAF00;
 }
