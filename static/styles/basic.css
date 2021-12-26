@@ -152,7 +152,7 @@ input:focus {
 .dropdown-content {
   display: none;
   position: absolute;
-  top: 60px;
+  top: 54px;
   left: -44px;
   width: 141px;
   background-color: #423A3A;
