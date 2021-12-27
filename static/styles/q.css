@@ -231,6 +231,10 @@ textarea {
   box-sizing: border-box;
   border-radius: 6.49324px;
   margin-bottom: 17px;
+
+  outline:0px !important;
+  -webkit-appearance:none;
+  box-shadow: none !important;
 }
 
 .report-icon {

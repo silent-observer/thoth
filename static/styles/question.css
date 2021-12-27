@@ -40,6 +40,10 @@ textarea {
   flex-grow: 1;
   padding: 7px 12px;
   border-radius: 0 0 6.5px 6.5px;
+
+  outline:0px !important;
+  -webkit-appearance:none;
+  box-shadow: none !important;
 }
 
 #subject-div {
