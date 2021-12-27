@@ -243,7 +243,23 @@ textarea {
   bottom: 5px;
 }
 
+.hide-icon {
+  width: 22px;
+  height: 22px;
+
+  position: absolute;
+  cursor: pointer;
+  right: 30px;
+  bottom: 5px;
+}
+
 .comment-body .report-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.comment-body .hide-icon {
+  right: 25px;
   width: 16px;
   height: 16px;
 }

@@ -41,6 +41,9 @@
       </div>
       <p>{{data['question']['text']}}</p>
       {% if logged_in %}
+      {% if moderator %}
+      <img class="hide-icon" q_id="{{data['question']['id']}}" src="{{url_for('static', filename='resources/hide_icon.png')}}">
+      {% endif %}
       <img class="report-icon" q_id="{{data['question']['id']}}" src="{{url_for('static', filename='resources/report_icon.png')}}">
       {% endif %}
     </div>
@@ -54,6 +57,9 @@
         <div class="comment-body">
           <p>{{comment['text']}}</p>
           {% if logged_in %}
+          {% if moderator %}
+          <img c_id="{{comment['id']}}" class="hide-icon" src="{{url_for('static', filename='resources/hide_icon.png')}}">
+          {% endif %}
           <img c_id="{{comment['id']}}" class="report-icon" src="{{url_for('static', filename='resources/report_icon.png')}}">
           {% endif %}
         </div>
@@ -104,6 +110,9 @@
     <div class="answer-body">
       <p>{{answer['text']}}</p>
       {% if logged_in %}
+      {% if moderator %}
+      <img class="hide-icon" a_id="{{answer['id']}}" src="{{url_for('static', filename='resources/hide_icon.png')}}">
+      {% endif %}
       <img class="report-icon" a_id="{{answer['id']}}" src="{{url_for('static', filename='resources/report_icon.png')}}">
       {% endif %}
     </div>
@@ -117,6 +126,9 @@
         <div class="comment-body">
           <p>{{comment['text']}}</p>
           {% if logged_in %}
+          {% if moderator %}
+          <img c_id="{{comment['id']}}" class="hide-icon" src="{{url_for('static', filename='resources/hide_icon.png')}}">
+          {% endif %}
           <img c_id="{{comment['id']}}" class="report-icon" src="{{url_for('static', filename='resources/report_icon.png')}}">
           {% endif %}
         </div>
