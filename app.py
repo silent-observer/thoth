@@ -32,7 +32,7 @@ def delete_expired_data():
         with local_db.session() as db:
             result = db.run(r'''
                 MATCH (n)<-[r:HIDDEN]-(u:User:Moderator)
-                WHERE r.date < datetime()
+                WHERE r.deletion_date < datetime()
                 MATCH (n)<-[:TO*0..]-(x)
                 DETACH DELETE x
                 RETURN count(x) as c
@@ -102,7 +102,7 @@ def main():
                 OPTIONAL MATCH (u)-[viewed:VIEWED]->(qs)
                 OPTIONAL MATCH (u)-[voted:VOTED]->(qs)
                 OPTIONAL MATCH (u)-[likes:LIKES]->(d)
-                RETURN a, qs, d, CASE
+                RETURN a, qs, d, voted, CASE
                     WHEN viewed IS NULL AND likes IS NOT NULL THEN j * 4 + 10
                     WHEN viewed IS NULL THEN j * 2
                     ELSE j
